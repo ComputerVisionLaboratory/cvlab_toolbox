@@ -1,11 +1,28 @@
 # cvlab_toolbox
 This is the repository of CVLAB toolbox
 
+## Usage
+- install by pip(SSH github access may be needed)
+  ```bash
+  pip install git+https://github.com/ComputerVisionLaboratory/cvlab_toolbox
+  ```
+
+- import `cvt` in python code
+  ```python
+  from cvt import foo
+
+  model = foo.Bar()
+  Bar.fit(X, y)
+
+  ...
+
+  ```
+
 ## Coding styles
 - Follow `PEP8`
   - [English](https://www.python.org/dev/peps/pep-0008/)
   - [日本語](http://pep8-ja.readthedocs.io/ja/latest/)
-- Write a description as docstring
+- Write a description as **docstring**
   ```python
   def PCA(X, whiten = False):
     '''
@@ -25,14 +42,14 @@ This is the repository of CVLAB toolbox
       -------
       components: ndarray, shape (n_features, n_features)
         the normalized component vectors
-        
+
       explained_variance: ndarray, shape (n_features)
         the variance of each vectors
     '''
 
     ...
   ```
-  
+
 ## Contribution rules
 1. Make a pull request
 2. Ask some lab members to review the code
