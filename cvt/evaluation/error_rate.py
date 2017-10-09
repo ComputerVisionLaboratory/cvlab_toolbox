@@ -24,7 +24,7 @@ def culc_er(X, y, labels=None, data_type='S'):
         error rate
     '''
 
-    _, _pred_class, mappings = culc_preparations(X, labels, data_type)
+    _, _pred_class, mappings = _culc_preparations(X, labels, data_type)
 
     if mappings is not None:
         _y = np.array([mappings[v] for v in y])
@@ -37,11 +37,34 @@ def culc_er(X, y, labels=None, data_type='S'):
 
 
 def culc_eer(X, labels=None, data_type='S'):
-    _labels, _pred_class, _ = culc_preparations(X, labels, data_type)
+    '''
+    culculate Error Rate (ER)
+
+    Parameters
+    ----------
+    X: ndarray, shape (n_samples, n_elements)
+        data matrix
+    labels(optional): ndarray, shape (n_elements)
+        labels that represents what class each element(row) belongs to
+        if it's not given, each rows are treated as independent class
+    data_type(optional): string
+        'S': Similarity (default)
+        'D': Distance
+
+    Returns
+    -------
+    eer: float
+        equal error rate
+    thresh: float
+        threashold
+    '''
+
+    _labels, _pred_class, _ = _culc_preparations(X, labels, data_type)
 
     # B has same shape with X
-    # each vector elements are 1 if its class is predected True and 0 if  False
+    # each vector elements are 1 if its class is predected True and 0 if False
     n_classes = len(np.unique(_labels))
+    print(_labels)
     B = np.eye(n_classes)[_labels][:, _pred_class]
 
     # make them 1D
@@ -73,7 +96,7 @@ def culc_eer(X, labels=None, data_type='S'):
     return eer, thresh
 
 
-def culc_preparations(X, labels, data_type):
+def _culc_preparations(X, labels, data_type):
     # check data_type
     if data_type not in {'S', 'D'}:
         raise ValueError('`data_type` must be \'S\' or \'D\'')
@@ -118,8 +141,8 @@ if __name__ == '__main__':
         [.1, .1, .1, .1, .1, .1, .1, .1, .1, .9],
     ])
 
-    y = np.array([0,0,1,1,2,2,3,3,4,4])
-    labels = np.array([0,0,1,1,2,2,3,3,4,4])
+    y = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
+    labels = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
 
     print(culc_er(X, y))
     print(culc_eer(X))

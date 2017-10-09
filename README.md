@@ -4,7 +4,7 @@ This is the repository of CVLAB toolbox
 ## Usage
 - install by pip(SSH github access may be needed)
   ```bash
-  pip install git+https://github.com/ComputerVisionLaboratory/cvlab_toolbox
+  pip install -U git+https://github.com/ComputerVisionLaboratory/cvlab_toolbox
   ```
 
 - import `cvt` in python code
