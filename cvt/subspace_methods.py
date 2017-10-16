@@ -15,6 +15,9 @@ class SM(BaseEstimator):
     ----------
     subspaces_ : array, shape (n_classes, n_features, n_features)
         Subspace of N classes.
+        
+    classes_ : array, shape (n_classes, )
+        Unique labels of Classes.
     """
     
     def __init__(self, n_dimension):
@@ -62,6 +65,17 @@ class SM(BaseEstimator):
             Class labels for samples in X.
         """
 
+        #===<normal version>===#
+#         n, d = X.shape
+#         preds = []
+#         for x in X:
+#             similarities = []
+#             for P in self.subspaces_:
+#                 similarities.append(x.T @ P @ x)
+#             preds.append(np.argmax(similarities))
+#         return self.classes_[preds]
+
+        #===<faster version (using broadcast)>===#
         # n: n_samples, d: n_features
         n, d = X.shape
 
@@ -71,6 +85,8 @@ class SM(BaseEstimator):
         similarities = similarities.squeeze()
         
         return self.classes_[np.argmax(similarities, axis=1)]
+    
+
 
     def score(self, X, y):
         return np.mean(self.predict(X) == y)
