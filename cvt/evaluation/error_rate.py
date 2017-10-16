@@ -1,9 +1,9 @@
 import numpy as np
 
 
-def culc_er(X, y, labels=None, data_type='S'):
+def calc_er(X, y, labels=None, data_type='S'):
     '''
-    culculate Error Rate (ER)
+    calculate Error Rate (ER)
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def culc_er(X, y, labels=None, data_type='S'):
         error rate
     '''
 
-    _, _pred_class, mappings = _culc_preparations(X, labels, data_type)
+    _, _pred_class, mappings = _calc_preparations(X, labels, data_type)
 
     if mappings is not None:
         _y = np.array([mappings[v] for v in y])
@@ -36,9 +36,9 @@ def culc_er(X, y, labels=None, data_type='S'):
     return er
 
 
-def culc_eer(X, labels=None, data_type='S'):
+def calc_eer(X, labels=None, data_type='S'):
     '''
-    culculate Error Rate (ER)
+    calculate Error Rate (ER)
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ def culc_eer(X, labels=None, data_type='S'):
         threashold
     '''
 
-    _labels, _pred_class, _ = _culc_preparations(X, labels, data_type)
+    _labels, _pred_class, _ = _calc_preparations(X, labels, data_type)
 
     # B has same shape with X
     # each vector elements are 1 if its class is predected True and 0 if False
@@ -96,7 +96,7 @@ def culc_eer(X, labels=None, data_type='S'):
     return eer, thresh
 
 
-def _culc_preparations(X, labels, data_type):
+def _calc_preparations(X, labels, data_type):
     # check data_type
     if data_type not in {'S', 'D'}:
         raise ValueError('`data_type` must be \'S\' or \'D\'')
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     y = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
     labels = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
 
-    print(culc_er(X, y))
-    print(culc_eer(X))
-    print(culc_er(X, y, labels))
-    print(culc_eer(X, labels))
+    print(calc_er(X, y))
+    print(calc_eer(X))
+    print(calc_er(X, y, labels))
+    print(calc_eer(X, labels))
