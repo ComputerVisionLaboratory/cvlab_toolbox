@@ -16,8 +16,12 @@ class SM(BaseEstimator):
     subspaces_ : array, shape (n_classes, n_features, n_features)
         Subspace of N classes.
         
-    classes_ : array, shape (n_classes, )
+    classes_ : array, shape (n_classes,)
         Unique labels of Classes.
+
+    mean_ : array, shape(n_features,)
+        Per-feature empirical mean, estimated from the training set.
+        Equal to X.mean(axis=1).
     """
     
     def __init__(self, n_dimension):
@@ -43,6 +47,7 @@ class SM(BaseEstimator):
 
             pca = PCA(n_components=self.n_dimension)
             pca.fit(X_class_i)
+            self.mean_ = pca.mean_
 
             # define projection matrix (equal to subspace)
             P = pca.components_.T @ pca.components_
@@ -78,6 +83,8 @@ class SM(BaseEstimator):
         #===<faster version (using broadcast)>===#
         # n: n_samples, d: n_features
         n, d = X.shape
+
+        X -= self.mean_
 
         similarities = X.reshape((n, 1, 1, d)) @ \
             np.expand_dims(self.subspaces_, axis=0) @ \
