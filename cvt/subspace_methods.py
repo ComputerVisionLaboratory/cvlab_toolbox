@@ -5,7 +5,7 @@ from sklearn.base import BaseEstimator
 class SM(BaseEstimator):
     """Subspace Method (SM)
     Classification method using Subspace.
-
+    
     Parameters
     ----------
     n_dimension : int
@@ -18,10 +18,6 @@ class SM(BaseEstimator):
         
     classes_ : array, shape (n_classes,)
         Unique labels of Classes.
-
-    mean_ : array, shape(n_features,)
-        Per-feature empirical mean, estimated from the training set.
-        Equal to X.mean(axis=1).
     """
     
     def __init__(self, n_dimension):
@@ -29,11 +25,15 @@ class SM(BaseEstimator):
     
     def fit(self, X, y):
         """Fit the model with X.
+        X should be normalized because this method uses PCA.
+        
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
             Training data, where n_samples in the number of samples
             and n_features is the number of features.
+        y : array_like, shape (n_samples,)
+            Label data, where n_samples in the number of samples
         Returns
         -------
         self : object
@@ -47,7 +47,6 @@ class SM(BaseEstimator):
 
             pca = PCA(n_components=self.n_dimension)
             pca.fit(X_class_i)
-            self.mean_ = pca.mean_
 
             # define projection matrix (equal to subspace)
             P = pca.components_.T @ pca.components_
@@ -84,8 +83,6 @@ class SM(BaseEstimator):
         # n: n_samples, d: n_features
         n, d = X.shape
 
-        X -= self.mean_
-
         similarities = X.reshape((n, 1, 1, d)) @ \
             np.expand_dims(self.subspaces_, axis=0) @ \
             X.reshape((n, 1, d, 1))
@@ -93,8 +90,6 @@ class SM(BaseEstimator):
         
         return self.classes_[np.argmax(similarities, axis=1)]
     
-
-
     def score(self, X, y):
         return np.mean(self.predict(X) == y)
 
