@@ -5,7 +5,7 @@ from sklearn.base import BaseEstimator
 class SM(BaseEstimator):
     """Subspace Method (SM)
     Classification method using Subspace.
-
+    
     Parameters
     ----------
     n_dimension : int
@@ -16,7 +16,7 @@ class SM(BaseEstimator):
     subspaces_ : array, shape (n_classes, n_features, n_features)
         Subspace of N classes.
         
-    classes_ : array, shape (n_classes, )
+    classes_ : array, shape (n_classes,)
         Unique labels of Classes.
     """
     
@@ -25,11 +25,15 @@ class SM(BaseEstimator):
     
     def fit(self, X, y):
         """Fit the model with X.
+        X should be normalized because this method uses PCA.
+        
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
             Training data, where n_samples in the number of samples
             and n_features is the number of features.
+        y : array_like, shape (n_samples,)
+            Label data, where n_samples in the number of samples
         Returns
         -------
         self : object
@@ -86,8 +90,6 @@ class SM(BaseEstimator):
         
         return self.classes_[np.argmax(similarities, axis=1)]
     
-
-
     def score(self, X, y):
         return np.mean(self.predict(X) == y)
 
