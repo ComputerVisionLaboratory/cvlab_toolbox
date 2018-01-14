@@ -1,11 +1,11 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
-    name = 'cvt',
+    name='cvt',
     version='0.0',
-    packages=[
-        'cvt',
-        'cvt.evaluation',
-    ],
-    install_requires=['numpy'],
+    packages=find_packages(),
+    install_requires=[
+        'numpy',
+        'scikit-learn',
+    ]
 )
