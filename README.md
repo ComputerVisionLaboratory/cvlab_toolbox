@@ -19,7 +19,7 @@ This is the repository of CVLAB toolbox
   ```
 
 ## Coding styles
-- Follow `PEP8`
+- Follow `PEP8` as much as possible
   - [English](https://www.python.org/dev/peps/pep-0008/)
   - [日本語](http://pep8-ja.readthedocs.io/ja/latest/)
 - Write a description as **docstring**
