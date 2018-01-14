@@ -73,7 +73,7 @@ class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         real_ids = np.where(e.imag == 0)[0]
         sorted_ids = np.argsort(e.real)[::-1]
         sorted_ids = sorted_ids[(sorted_ids[:, np.newaxis] == real_ids).any(axis=1)] # sorted ids only with imag==0
-        print(sorted_ids, e[sorted_ids])
+
         self.W = v[:, sorted_ids[:n_classes - 1]]
         self.train_projs = K.T @ self.W
 
