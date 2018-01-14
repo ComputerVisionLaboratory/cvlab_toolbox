@@ -12,6 +12,19 @@ from ..utils import canonical_angle_matrix, subspace_bases
 
 
 class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
+    """
+    Discriminant analysis on Grassmann maniforld.
+
+    Parameters
+    ----------
+    n_subdim : int, optional (default=3)
+        A dimension of subspace. it must be smaller than the dimension of original space.
+
+    normalize : boolean, optional (default=True)
+        If this is True, all vectors are normalized as |v| = 1
+
+    """
+
     def __init__(self, n_subdims=3, normalize=True):
         self.normalize = normalize
         self.n_subdims = n_subdims
