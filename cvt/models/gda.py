@@ -52,26 +52,26 @@ class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
 
         X = self._convert_to_subspace_bases(X)
         self.train_X = X
-        C = canonical_angle_matrix(X, X)
+        K = canonical_angle_matrix(X, X)
 
         # in-class averages in each class
-        uc = np.stack([C[_y == c].mean(axis=0) for c in range(n_classes)], axis=0)
+        uc = np.stack([K[_y == c].mean(axis=0) for c in range(n_classes)], axis=0)
         # an average over all class
-        u = C.mean(axis=0)
+        u = K.mean(axis=0)
 
         # diagonal matrix which has number of samples in each class
         D = np.diag([_y[_y == c].size for c in range(n_classes)])
         # covariances of average over classes
         sigb = (uc - u).T @ D @ (uc - u) / n_samples
         # a sum of inner-covariance
-        sigw = (C - uc[_y]).T @ (C - uc[_y]) / n_samples
+        sigw = (K - uc[_y]).T @ (K - uc[_y]) / n_samples
         # a noise to make sigw full-rank
         sigw += 1e10 * np.eye(n_samples)
 
         sig = np.linalg.inv(sigw) @ sigb
         _, v = np.linalg.eig(sig)
         self.W = v[:, :n_classes - 1]
-        self.train_projs = C.T @ self.W
+        self.train_projs = K.T @ self.W
 
     def predict(self, X):
         """
@@ -92,8 +92,8 @@ class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
 
         X = self._convert_to_subspace_bases(X)
 
-        C = canonical_angle_matrix(self.train_X, X)
-        projections = C.T @ self.W
+        K = canonical_angle_matrix(self.train_X, X)
+        projections = K.T @ self.W
         distances = np.linalg.norm(projections[:, np.newaxis, :] - self.train_projs[np.newaxis, :, :], axis=2)
         nearest = np.argmin(distances, axis=1)
         _pred = self.labels[nearest]
