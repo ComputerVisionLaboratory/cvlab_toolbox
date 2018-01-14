@@ -66,11 +66,15 @@ class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         # a sum of inner-covariance
         sigw = (K - uc[_y]).T @ (K - uc[_y]) / n_samples
         # a noise to make sigw full-rank
-        sigw += 1e10 * np.eye(n_samples)
+        sigw += 1e-10 * np.eye(n_samples)
 
         sig = np.linalg.inv(sigw) @ sigb
-        _, v = np.linalg.eig(sig)
-        self.W = v[:, :n_classes - 1]
+        e, v = np.linalg.eig(sig)
+        real_ids = np.where(e.imag == 0)[0]
+        sorted_ids = np.argsort(e.real)[::-1]
+        sorted_ids = sorted_ids[(sorted_ids[:, np.newaxis] == real_ids).any(axis=1)] # sorted ids only with imag==0
+        print(sorted_ids, e[sorted_ids])
+        self.W = v[:, sorted_ids[:n_classes - 1]]
         self.train_projs = K.T @ self.W
 
     def predict(self, X):
