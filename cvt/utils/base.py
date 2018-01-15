@@ -53,6 +53,30 @@ def canonical_angle_matrix(X, Y):
 
     return C
 
+# faster method
+def canonical_angle_matrix_f(X, Y):
+    """Calculate canonical angles between subspaces
+    example     similarity = MathUtils.calc_basis_vector(X, Y)
+
+    Parameters
+    ----------
+    X: set of basis matrix, array-like, shape: (n_set_X, n_subdim, n_dim)
+        n_subdim can be variable on each subspaces
+    Y: set of basis matrix, array-like, shape: (n_set_Y, n_subdim, n_dim)
+        n_set can be variable from n_set of X
+        n_subdim can be variable on each subspaces
+
+    Returns:
+        C: similarity matrix, array-like, shape: (n_set_X, n_set_Y)
+
+    """
+    X = np.transpose(X, (0, 2, 1))
+    D = Y.dot(X)
+    _D = np.transpose(D, (0, 2, 1, 3))
+    _, C, _ = np.linalg.svd(_D)
+    sim = C**2
+    return sim.mean(2)
+
 
 def subspace_bases(X, n_subdims):
     """
