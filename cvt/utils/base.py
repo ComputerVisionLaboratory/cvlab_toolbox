@@ -8,6 +8,22 @@ Mathematical utilities
 import numpy as np
 
 
+def mean_square_singular_values(X):
+    """
+    calculate mean square of singular values of X
+
+    Parameters:
+    -----------
+    X : array-like, shape: (n, m)
+
+    Returns:
+    --------
+    c: mean square of singular values
+    """
+    _, s, _ = np.linalg.svd(X)
+    return (s ** 2).mean()
+
+
 def canonical_angle(X, Y):
     """
     Calculate cannonical angles beween subspaces
@@ -23,9 +39,7 @@ def canonical_angle(X, Y):
 
     """
 
-    _, s, _ = np.linalg.svd(Y @ X.T)
-    c = (s ** 2).mean()
-    return c
+    return mean_square_singular_values(Y @ X.T)
 
 
 def canonical_angle_matrix(X, Y):
@@ -74,3 +88,27 @@ def subspace_bases(X, n_subdims):
     v = v.T[::-1]
     V = v[:n_subdims]
     return V
+
+
+def dual_vectors(K):
+    """
+    Calc dual representation of vectors in kernel space
+
+    Parameters:
+    -----------
+    K :  array-like, shape: (n_samples, n_samples)
+        Grammian Matrix of X: K(X, X)
+
+    Returns:
+    --------
+    A : array-like, shape: (n_samples, n_samples)
+        Dual replesentation vectors.
+        it satisfies lambda[i] * A[i] @ A[i] == 1, where lambda[i] is i-th biggest eigenvalue
+    e:  array-like, shape: (n_samples, )
+        Eigen values descending sorted
+    """
+
+    e, A = np.linalg.eigh(K)
+    e, A = e[::-1], A[:, ::-1]
+    A = A / np.sqrt(e)
+    return A.T, e
