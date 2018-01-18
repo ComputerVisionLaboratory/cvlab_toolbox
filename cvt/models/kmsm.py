@@ -8,7 +8,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 
-from ..utils import rbf_kernel, dual_vectors, mean_square_singular_values
+from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values
 
 
 class KernelMSM(BaseEstimator, ClassifierMixin):
@@ -60,8 +60,6 @@ class KernelMSM(BaseEstimator, ClassifierMixin):
 
         # converted labels
         y = self.le.fit_transform(y)
-        # numbers of vectors in each class
-        n_vectors = [len(_X) for _X in X]
         # number of classes
         n_classes = self.le.classes_.size
         # number of subspace dimension
@@ -77,9 +75,9 @@ class KernelMSM(BaseEstimator, ClassifierMixin):
         for i in range(n_classes):
             # K is a Grammian matrix of all vectors, shape: (sum of n_vectors, sum of n_vectors)
             K = self.kernel_func(X[i], X[i], self.sigma)
-            _A, _ = dual_vectors(K)
-            A.append(_A[: n_subdims])
-        self.A = np.array(A)
+            _A, _ = dual_vectors(K, n_subdims)
+            A.append(_A)
+        self.A = A
 
     def predict(self, X):
         """
@@ -109,11 +107,10 @@ class KernelMSM(BaseEstimator, ClassifierMixin):
             c = []
             for i in range(n_classes):
                 K = self.kernel_func(_X, _X, self.sigma)
-                A, _ = dual_vectors(K)[: self.n_subdims]
-
+                A, _ = dual_vectors(K, n_subdims)
                 train_X = self.train_X[i]
-                K = self.kernel_func(train_X, _X)
-                S = self.A[i] @ K @ A.T
+                _K = self.kernel_func(train_X, _X)
+                S = self.A[i] @ _K @ A.T
                 _c = mean_square_singular_values(S)
                 c.append(_c)
             pred.append(self.labels[np.argmax(c)])
