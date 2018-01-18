@@ -90,7 +90,7 @@ def subspace_bases(X, n_subdims):
     return V
 
 
-def dual_vectors(K):
+def dual_vectors(K, n_subdims=None):
     """
     Calc dual representation of vectors in kernel space
 
@@ -110,5 +110,9 @@ def dual_vectors(K):
 
     e, A = np.linalg.eigh(K)
     e, A = e[::-1], A[:, ::-1]
+
+    if n_subdims is not None:
+        e, A = e[:n_subdims], A[:, :n_subdims]
+
     A = A / np.sqrt(e)
     return A.T, e
