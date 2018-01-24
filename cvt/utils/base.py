@@ -20,9 +20,13 @@ def mean_square_singular_values(X):
     --------
     c: mean square of singular values
     """
-    _, s, _ = np.linalg.svd(X)
-    return (s ** 2).mean()
 
+    #_, s, _ = np.linalg.svd(X)
+    # mssv = (s ** 2).mean()
+
+    # Frobenius norm means square root of sum of square singular values
+    mssv = (X * X).sum() / min(X.shape)
+    return mssv
 
 def canonical_angle(X, Y):
     """
