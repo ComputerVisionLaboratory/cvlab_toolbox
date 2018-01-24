@@ -17,7 +17,7 @@ class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    n_subdim : int, optional (default=3)
+    n_subdims : int, optional (default=3)
         A dimension of subspace. it must be smaller than the dimension of original space.
 
     normalize : boolean, optional (default=True)
