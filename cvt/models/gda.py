@@ -65,7 +65,7 @@ class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
 
         X = self._convert_to_subspace_bases(X)
         self.train_X = X
-        K = canonical_angle_matrix(X, X)
+        K = canonical_angle_matrix(X, X) * self.n_subdims
 
         # in-class averages in each class
         uc = np.stack([K[_y == c].mean(axis=0) for c in range(n_classes)], axis=0)
