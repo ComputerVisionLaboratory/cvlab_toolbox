@@ -1,3 +1,4 @@
 from .gda import GrassmannDiscriminantAnalysis
-from .komsm import KernelOMSM
 from .kmsm import KernelMSM
+from .kcmsm import KernelCMSM
+from .komsm import KernelOMSM

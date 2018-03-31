@@ -121,6 +121,6 @@ class GrassmannDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         if self.normalize:
             X = [_normalize(x) for x in X]
 
-        X = np.array([subspace_bases(x, self.n_subdims) for x in X])
+        X = np.array([subspace_bases(x.T, self.n_subdims).T for x in X])
 
         return X
