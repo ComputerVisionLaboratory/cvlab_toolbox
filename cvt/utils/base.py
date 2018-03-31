@@ -6,6 +6,7 @@ Mathematical utilities
 #          Takahiro Inagaki
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def mean_square_singular_values(X):
@@ -21,12 +22,13 @@ def mean_square_singular_values(X):
     c: mean square of singular values
     """
 
-    #_, s, _ = np.linalg.svd(X)
+    # _, s, _ = np.linalg.svd(X)
     # mssv = (s ** 2).mean()
 
     # Frobenius norm means square root of sum of square singular values
     mssv = (X * X).sum() / min(X.shape)
     return mssv
+
 
 def canonical_angle(X, Y):
     """
@@ -71,6 +73,7 @@ def canonical_angle_matrix(X, Y):
 
     return C
 
+
 # faster method
 def canonical_angle_matrix_f(X, Y):
     """Calculate canonical angles between subspaces
@@ -92,33 +95,58 @@ def canonical_angle_matrix_f(X, Y):
     D = Y.dot(X)
     _D = np.transpose(D, (0, 2, 1, 3))
     _, C, _ = np.linalg.svd(_D)
-    sim = C**2
+    sim = C ** 2
     return sim.mean(2)
 
 
-def subspace_bases(X, n_subdims):
+def _eigen_basis(X, n_dims):
     """
-    Simple PCA and
+    Return subspace basis using PCA
 
     Parameters
     ----------
-    X: array-like, shape (n_vectors, n_features)
+    X: array-like, shape (a, b)
+        target matrix
+    n_dims: integer
+        number of basis
+
+    Returns
+    -------
+    V: array-like, shape (n_dimensions, n_subdims)
+        bases matrix
+    """
+
+    e, V = np.linalg.eigh(X)
+    e, V = e[::-1], V[:, ::-1]
+
+    if type(n_dims) is int and n_dims >= 1:
+        e, V = e[:n_dims], V[:, :n_dims]
+
+    return e, V
+
+
+def subspace_bases(X, n_subdims=None):
+    """
+    Return subspace basis using PCA
+
+    Parameters
+    ----------
+    X: array-like, shape (n_dimensions, n_vectors)
         data matrix
     n_subdims: integer
         number of subspace dimension
 
     Returns
     -------
-    V: array-like, shape (n_subdims, n_features)
+    V: array-like, shape (n_dimensions, n_subdims)
         bases matrix
     """
-    _, v = np.linalg.eigh(X.T @ X)
-    v = v.T[::-1]
-    V = v[:n_subdims]
+
+    _, V = _eigen_basis(X @ X.T, n_subdims)
     return V
 
 
-def dual_vectors(K, n_subdims=None):
+def dual_vectors(K, n_subdims=None, truncate_zero=False):
     """
     Calc dual representation of vectors in kernel space
 
@@ -126,6 +154,10 @@ def dual_vectors(K, n_subdims=None):
     -----------
     K :  array-like, shape: (n_samples, n_samples)
         Grammian Matrix of X: K(X, X)
+    n_subdims: int, default=None
+        number of vectors of dual vectors to return
+    truncate_zero: boolean, default=False
+        truncate vectors whose eigen values are less than or equal to zero
 
     Returns:
     --------
@@ -136,11 +168,6 @@ def dual_vectors(K, n_subdims=None):
         Eigen values descending sorted
     """
 
-    e, A = np.linalg.eigh(K)
-    e, A = e[::-1], A[:, ::-1]
-
-    if n_subdims is not None:
-        e, A = e[:n_subdims], A[:, :n_subdims]
-
+    e, A = _eigen_basis(K, n_subdims)
     A = A / np.sqrt(e)
-    return A.T, e
+    return A, e
