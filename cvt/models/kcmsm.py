@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 from scipy.linalg import block_diag
 
-from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values, subspace_bases
+from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values, subspace_bases, cross_similarities
 
 
 class KernelCMSM(BaseEstimator, ClassifierMixin):
@@ -34,7 +34,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         A parameter of rbf_kernel
     """
 
-    def __init__(self, n_subdims, n_kgds, normalize=True, kernel_func=rbf_kernel, sigma=None):
+    def __init__(self, n_subdims=5, n_kgds=100, normalize=True, kernel_func=rbf_kernel, sigma=None):
         self.n_subdims = n_subdims
         self.n_kgds = n_kgds
         self.normalize = normalize
@@ -117,7 +117,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         X_kgds = [X_kgds[:, mappings == y[i]] for i in range(n_classes)]
 
         # reference subspaces
-        refs = [subspace_bases(_X, self.n_subdims) for _X in X_kgds]
+        refs = [subspace_bases(_X, n_subdims) for _X in X_kgds]
 
         self.X_kgds = X_kgds
         self.W = W
@@ -154,10 +154,10 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         X_kgds = [X_kgds[:, mappings == i] for i in range(n_data)]
 
         # input subspaces
-        inputs = [subspace_bases(_X, self.n_subdims) for _X in X_kgds]
+        inputs = [subspace_bases(_X, n_subdims) for _X in X_kgds]
 
         # similarities per references
-        similarities = np.array([[mean_square_singular_values(ref.T @ _input) for ref in self.refs] for _input in inputs])
+        similarities = cross_similarities(self.refs, inputs)
 
         pred = self.labels[np.argmax(similarities, axis=1)]
 

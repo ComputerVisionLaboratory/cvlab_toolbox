@@ -99,7 +99,7 @@ def canonical_angle_matrix_f(X, Y):
     return sim.mean(2)
 
 
-def _eigen_basis(X, n_dims):
+def _eigen_basis(X, n_dims=None):
     """
     Return subspace basis using PCA
 
@@ -119,7 +119,7 @@ def _eigen_basis(X, n_dims):
     e, V = np.linalg.eigh(X)
     e, V = e[::-1], V[:, ::-1]
 
-    if type(n_dims) is int and n_dims >= 1:
+    if n_dims is not None and n_dims >= 1:
         e, V = e[:n_dims], V[:, :n_dims]
 
     return e, V
@@ -146,7 +146,7 @@ def subspace_bases(X, n_subdims=None):
     return V
 
 
-def dual_vectors(K, n_subdims=None, truncate_zero=False):
+def dual_vectors(K, n_subdims=None, eps=1e-6):
     """
     Calc dual representation of vectors in kernel space
 
@@ -168,6 +168,25 @@ def dual_vectors(K, n_subdims=None, truncate_zero=False):
         Eigen values descending sorted
     """
 
-    e, A = _eigen_basis(K, n_subdims)
+    e, A = _eigen_basis(K + eps * np.eye(K.shape[0]), n_subdims)
     A = A / np.sqrt(e)
     return A, e
+
+def cross_similarities(refs, inputs):
+    """
+    Calc similarities between each reference spaces and each input subspaces
+
+    Parameters:
+    -----------
+    refs: list of array-like (n_dims, n_subdims_i)
+    inputs: list of array-like (n_dims, n_subdims_j)
+
+    Returns:
+    --------
+    similarities: array-like, shape (n_refs, n_inputs)
+    """
+
+    # TODO: prallelize
+    similarities = np.array([[mean_square_singular_values(ref.T @ _input) for ref in refs] for _input in inputs])
+
+    return similarities
