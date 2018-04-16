@@ -8,6 +8,8 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 from scipy.linalg import block_diag
+from numba import jitclass, int16, boolean, float64
+from joblib import Parallel, delayed
 
 from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values, subspace_bases, cross_similarities
 
@@ -21,8 +23,9 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
     n_subdims : int
         A dimension of subspace. it must be smaller than the dimension of original space.
 
-    n_kgds : int
-        A dimension of Kernel GDS
+    kgds_rate : int
+        A rate of dimension of Kernel GDS.
+        This model uses int(len(X) * kgds_rate) dimensions KGDS
 
     normalize : boolean, optional (default=True)
         If this is True, all vectors are normalized as |v| = 1
@@ -34,12 +37,13 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         A parameter of rbf_kernel
     """
 
-    def __init__(self, n_subdims=5, n_kgds=100, normalize=True, kernel_func=rbf_kernel, sigma=None):
+    def __init__(self, n_subdims=5, kgds_rate=0.9, normalize=True, sigma=None, n_jobs=1):
         self.n_subdims = n_subdims
-        self.n_kgds = n_kgds
+        self.kgds_rate = kgds_rate
         self.normalize = normalize
         self.sigma = sigma
-        self.kernel_func = kernel_func
+        self.kernel_func = rbf_kernel
+        self.n_jobs = n_jobs
         self.le = LabelEncoder()
         self.train_X = None
         self.labels = None
@@ -94,6 +98,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
 
         # K is a Grammian matrix of all vectors, shape: (sum of n_vectors, sum of n_vectors)
         K = self.kernel_func(X.T, X.T, self.sigma)
+        K = (K + K.T) / 2   # make simentry strictly
 
         # A has dual vectors of each class in its diagonal
         E = []
@@ -109,17 +114,17 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         D = E.T @ K @ E
 
         # Dual vectors over all classes
-        B, _ = dual_vectors(D)
-        B = B[:, len(B) - self.n_kgds:]
+        hi = int(D.shape[0] * self.kgds_rate)
+        eigvals = (0, min(hi, D.shape[0]-1))
+        B, _ = dual_vectors(D, eigvals=eigvals, truncate=1e-18)
         W = B.T @ E.T
 
         X_kgds = W @ K
         X_kgds = [X_kgds[:, mappings == y[i]] for i in range(n_classes)]
 
         # reference subspaces
-        refs = [subspace_bases(_X, n_subdims) for _X in X_kgds]
+        refs = self.__subspace_bases(X_kgds)
 
-        self.X_kgds = X_kgds
         self.W = W
         self.refs = refs
 
@@ -154,7 +159,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         X_kgds = [X_kgds[:, mappings == i] for i in range(n_data)]
 
         # input subspaces
-        inputs = [subspace_bases(_X, n_subdims) for _X in X_kgds]
+        inputs = self.__subspace_bases(X_kgds)
 
         # similarities per references
         similarities = cross_similarities(self.refs, inputs)
@@ -162,3 +167,27 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         pred = self.labels[np.argmax(similarities, axis=1)]
 
         return self.le.inverse_transform(pred)
+
+    def __subspace_bases(self, X):
+        """
+        Fit the model according to the given traininig data and parameters
+
+        Parameters
+        ----------
+        X: array-like, shape = (n_samples, n_vectors, n_features)
+            Training vectors, where n_samples is number of samples, n_vectors is number of vectors on each samples
+            and n_features is number of features. Since n_vectors may be variable on each samples, X can be lists
+            containing n_sample matrices: [array(n_vectors{1}, n_features),..., array(n_vectors{n_samples}, n_features)]
+
+        y: integer array, shape = (n_samples, )
+            Target values
+        """
+
+        # if # self.n_jobs == 1:
+        #     return [subspace_bases(_X, self.n_subdims) for _X in X]
+        # else:
+        #     parallel = Parallel(n_jobs=self.n_jobs)
+        #     sb = delayed(subspace_bases)
+        #     return parallel([delayed(subspace_bases)(_X, self.n_subdims) for _X in X])
+
+        return [subspace_bases(_X, self.n_subdims) for _X in X]

@@ -6,9 +6,10 @@ Mathematical utilities
 #          Takahiro Inagaki
 
 import numpy as np
-from matplotlib import pyplot as plt
+from scipy.linalg import eigh
+from numba import jit
 
-
+@jit
 def mean_square_singular_values(X):
     """
     calculate mean square of singular values of X
@@ -30,6 +31,7 @@ def mean_square_singular_values(X):
     return mssv
 
 
+@jit
 def canonical_angle(X, Y):
     """
     Calculate cannonical angles beween subspaces
@@ -48,6 +50,7 @@ def canonical_angle(X, Y):
     return mean_square_singular_values(Y @ X.T)
 
 
+@jit
 def canonical_angle_matrix(X, Y):
     """Calculate canonical angles between subspaces
     example     similarity = MathUtils.calc_basis_vector(X, Y)
@@ -99,28 +102,63 @@ def canonical_angle_matrix_f(X, Y):
     return sim.mean(2)
 
 
-def _eigen_basis(X, n_dims=None):
+def _eigh(X, eigvals=None):
+    """
+    A wrapper function of numpy.linalg.eigh and scipy.linalg.eigh
+
+    Parameters
+    ----------
+    X: array-like, shape (a, a)
+        target matrix
+    eigvals: tuple, (lo, hi)
+        Indexes of the smallest and largest (in ascending order) eigenvalues and corresponding eigenvectors
+        to be returned: 0 <= lo <= hi <= M-1. If omitted, all eigenvalues and eigenvectors are returned.
+
+    Returns
+    -------
+    e: array-like, shape (a) or (n_dims)
+        eigenvalues with descending order
+    V: array-like, shape (a, a) or (a, n_dims)
+        eigenvectors
+    """
+
+    if eigvals != None:
+        e, V = eigh(X, eigvals=eigvals)
+    else:
+        # numpy's eigh is faster than scipy's when all calculating eigenvalues and eigenvectors
+        e, V = np.linalg.eigh(X)
+
+    e, V = e[::-1], V[:, ::-1]
+
+    return e, V
+
+
+
+def _eigen_basis(X, eigvals=None):
     """
     Return subspace basis using PCA
 
     Parameters
     ----------
-    X: array-like, shape (a, b)
+    X: array-like, shape (a, a)
         target matrix
     n_dims: integer
         number of basis
 
     Returns
     -------
-    V: array-like, shape (n_dimensions, n_subdims)
-        bases matrix
+    e: array-like, shape (a) or (n_dims)
+        eigenvalues with descending order
+    V: array-like, shape (a, a) or (a, n_dims)
+        eigenvectors
     """
 
-    e, V = np.linalg.eigh(X)
-    e, V = e[::-1], V[:, ::-1]
-
-    if n_dims is not None and n_dims >= 1:
-        e, V = e[:n_dims], V[:, :n_dims]
+    try:
+        e, V = _eigh(X, eigvals=eigvals)
+    except np.linalg.LinAlgError:
+        # if it not converges, try with tiny salt
+        salt = 1e-8 * np.eye(X.shape[0])
+        e, V = eigh(X + salt, eigvals=eigvals)
 
     return e, V
 
@@ -142,11 +180,18 @@ def subspace_bases(X, n_subdims=None):
         bases matrix
     """
 
-    _, V = _eigen_basis(X @ X.T, n_subdims)
+    if n_subdims is not None:
+        last = X.shape[0] - 1
+        eigvals = (last - n_subdims, last)
+    else:
+        eigvals = None
+
+    _, V = _eigen_basis(X @ X.T, eigvals=eigvals)
+
     return V
 
 
-def dual_vectors(K, n_subdims=None, eps=1e-6):
+def dual_vectors(K, n_subdims=None, eigvals=None, truncate=None):
     """
     Calc dual representation of vectors in kernel space
 
@@ -156,8 +201,8 @@ def dual_vectors(K, n_subdims=None, eps=1e-6):
         Grammian Matrix of X: K(X, X)
     n_subdims: int, default=None
         number of vectors of dual vectors to return
-    truncate_zero: boolean, default=False
-        truncate vectors whose eigen values are less than or equal to zero
+    eigvals: tuple, (lo, hi)
+        eigenvalues index range. if this is specified, n_subdims is ignored.
 
     Returns:
     --------
@@ -168,10 +213,25 @@ def dual_vectors(K, n_subdims=None, eps=1e-6):
         Eigen values descending sorted
     """
 
-    e, A = _eigen_basis(K + eps * np.eye(K.shape[0]), n_subdims)
+    if eigvals is None and n_subdims is not None:
+        last = K.shape[0] - 1
+        eigvals = (last - n_subdims, last)
+
+    e, A = _eigen_basis(K, eigvals=eigvals)
+
+    if truncate is not None:
+        A = A[:, e > truncate]
+        e = e[e > truncate]
+
+    # replace if there are too small eigenvalues
+    e[(e < 1e-20)] = 1e-20
+
     A = A / np.sqrt(e)
+
     return A, e
 
+
+@jit
 def cross_similarities(refs, inputs):
     """
     Calc similarities between each reference spaces and each input subspaces
@@ -186,7 +246,13 @@ def cross_similarities(refs, inputs):
     similarities: array-like, shape (n_refs, n_inputs)
     """
 
-    # TODO: prallelize
-    similarities = np.array([[mean_square_singular_values(ref.T @ _input) for ref in refs] for _input in inputs])
+    similarities = []
+    for _input in inputs:
+        sim = []
+        for ref in refs:
+            sim.append(mean_square_singular_values(ref.T @ _input))
+        similarities.append(sim)
+
+    similarities = np.array(similarities)
 
     return similarities
