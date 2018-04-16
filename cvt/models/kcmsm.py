@@ -8,8 +8,6 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 from scipy.linalg import block_diag
-from numba import jitclass, int16, boolean, float64
-from joblib import Parallel, delayed
 
 from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values, subspace_bases, cross_similarities
 
