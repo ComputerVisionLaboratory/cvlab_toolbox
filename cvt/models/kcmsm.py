@@ -35,13 +35,14 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         A parameter of rbf_kernel
     """
 
-    def __init__(self, n_subdims=5, kgds_rate=0.9, normalize=True, sigma=None, n_jobs=1):
+    def __init__(self, n_subdims=5, kgds_rate=0.9, normalize=True, sigma=None, n_jobs=1, ignore_check_dimensions=False):
         self.n_subdims = n_subdims
         self.kgds_rate = kgds_rate
         self.normalize = normalize
         self.sigma = sigma
         self.kernel_func = rbf_kernel
         self.n_jobs = n_jobs
+        self.ignore_check_dimensions = ignore_check_dimensions
         self.le = LabelEncoder()
         self.train_X = None
         self.labels = None
@@ -72,12 +73,15 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
             Target values
         """
 
+        if not self.ignore_check_dimensions:
+            self.__check_dimensions(X)
+
         # converted labels
         y = self.le.fit_transform(y)
         # number of classes
         n_classes = self.le.classes_.size
-        # number of subspace dimension
-        n_subdims = self.n_subdims
+        # numbers of each subspace dimension
+        n_subdims = [min(len(_X), self.n_subdims) for _X in X]
         # an array which maps a vector to its label
         mappings = np.array([y[i] for i, _X in enumerate(X) for _ in range(len(_X))])
 
@@ -96,7 +100,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
 
         # K is a Grammian matrix of all vectors, shape: (sum of n_vectors, sum of n_vectors)
         K = self.kernel_func(X.T, X.T, self.sigma)
-        K = (K + K.T) / 2   # make simentry strictly
+        K = (K + K.T) / 2   # make it strictly simentry
 
         # A has dual vectors of each class in its diagonal
         E = []
@@ -104,7 +108,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
             p = (mappings == y[i])
             # clipping K(X[y==c], X[y==c])
             _K = K[p][:, p]
-            _A, _ = dual_vectors(_K, n_subdims)
+            _A, _ = dual_vectors(_K, n_subdims[i])
             E.append(_A)
         E = block_diag(*E)
 
@@ -121,7 +125,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         X_kgds = [X_kgds[:, mappings == y[i]] for i in range(n_classes)]
 
         # reference subspaces
-        refs = self.__subspace_bases(X_kgds)
+        refs = self.__subspace_bases(X_kgds, n_subdims=n_subdims)
 
         self.W = W
         self.refs = refs
@@ -143,7 +147,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         """
 
         n_data = len(X)
-        n_subdims = self.n_subdims
+        n_subdims = [min(len(_X), self.n_subdims) for _X in X]
 
         mappings = np.array([i for i, _X in enumerate(X) for _ in range(len(_X))])
 
@@ -157,7 +161,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
         X_kgds = [X_kgds[:, mappings == i] for i in range(n_data)]
 
         # input subspaces
-        inputs = self.__subspace_bases(X_kgds)
+        inputs = self.__subspace_bases(X_kgds, n_subdims=n_subdims)
 
         # similarities per references
         similarities = cross_similarities(self.refs, inputs)
@@ -166,7 +170,7 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
 
         return self.le.inverse_transform(pred)
 
-    def __subspace_bases(self, X):
+    def __subspace_bases(self, X, n_subdims):
         """
         Fit the model according to the given traininig data and parameters
 
@@ -181,11 +185,12 @@ class KernelCMSM(BaseEstimator, ClassifierMixin):
             Target values
         """
 
-        # if # self.n_jobs == 1:
-        #     return [subspace_bases(_X, self.n_subdims) for _X in X]
-        # else:
-        #     parallel = Parallel(n_jobs=self.n_jobs)
-        #     sb = delayed(subspace_bases)
-        #     return parallel([delayed(subspace_bases)(_X, self.n_subdims) for _X in X])
+        return [subspace_bases(_X, n_subdims[i]) for i, _X in enumerate(X)]
 
-        return [subspace_bases(_X, self.n_subdims) for _X in X]
+    def __check_dimensions(self, X):
+        ids = np.where(list(map(lambda _X: len(_X) < self.n_subdims, X)))[0]
+
+        raise Exception(f'''
+            Some of data matrix has less dimensions than n_subdims={self.n_subdims}
+            matrix index is {ids}
+        ''')

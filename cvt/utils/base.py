@@ -214,8 +214,8 @@ def dual_vectors(K, n_subdims=None, eigvals=None, truncate=None):
     """
 
     if eigvals is None and n_subdims is not None:
-        last = K.shape[0] - 1
-        eigvals = (last - n_subdims, last)
+        n_vectors = K.shape[0]
+        eigvals = (n_vectors - n_subdims, n_vectors - 1)
 
     e, A = _eigen_basis(K, eigvals=eigvals)
 
