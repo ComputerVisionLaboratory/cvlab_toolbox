@@ -9,6 +9,7 @@ from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 
 from cvt.utils import subspace_bases
+from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values
 
 
 class SMBase(BaseEstimator, ClassifierMixin):
@@ -128,6 +129,49 @@ class SMBase(BaseEstimator, ClassifierMixin):
         X: arrays, (n_dims, n_samples)
         """
         raise NotImplementedError('_predict is not implemented')
+
+
+class KernelSMBase(SMBase):
+    """
+    Base class of Kernel Subspace Method
+    """
+
+    def __init__(self, n_subdims, normalize=False, sigma=None):
+        """
+        Parameters
+        ----------
+        n_subdims : int, optional (default=3)
+            A dimension of subspace. it must be smaller than the dimension of original space.
+
+        normalize : boolean, optional (default=True)
+            If this is True, all vectors are normalized as |v| = 1
+
+        sigma : int or str, optional (default=None)
+            a parameter of rbf kernel. if sigma is None, sqrt(n_dims / 2) will be used.
+        """
+        super(KernelSMBase, self).__init__(n_subdims, normalize)
+        self.sigma = sigma
+
+    def get_params(self, deep=True):
+        return {
+            'n_subdims': self.n_subdims,
+            'sigma': self.sigma,
+        }
+
+    def _fit(self, X, y):
+        """
+        Parameters
+        ----------
+        X: list of 2d-arrays, (n_classes, n_dims, n_samples)
+        y: array, (n_classes)
+        """
+        coeff = []
+        for _X in X:
+            K = rbf_kernel(_X, _X, self.sigma)
+            _coeff, _ = dual_vectors(K, self.n_subdims)
+            coeff.append(_coeff)
+
+        self.dict = list(zip(X, coeff))
 
 
 class MSMInterface(object):

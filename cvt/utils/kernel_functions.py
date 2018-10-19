@@ -4,6 +4,7 @@ Kernel functions
 
 # Authors: Junki Ishikawa
 
+import numpy as np
 from sklearn.metrics.pairwise import rbf_kernel as _rbf_kernel
 
 
@@ -14,12 +15,12 @@ def rbf_kernel(X, Y, sigma=None):
 
     Parameters
     ----------
-    X : array of shape (n_samples_X, n_features)
+    X : array of shape (n_dims, n_samples_X)
 
-    Y : array of shape (n_samples_Y, n_features)
+    Y : array of shape (n_dims, n_samples_Y)
 
     sigma : float, default None
-        If None, defaults to sqrt(n_features / 2)
+        If None, defaults to sqrt(n_dims / 2)
 
     Returns:
     --------
@@ -27,8 +28,17 @@ def rbf_kernel(X, Y, sigma=None):
         Grammian matrix
     """
 
-    gamma = 1 / (2 * sigma**2) if sigma is not None else None
-    return _rbf_kernel(X, Y, gamma=gamma)
+    n_dims = X.shape[0]
+    if sigma is None:
+        sigma = np.sqrt(n_dims / 2)
+
+    # subtraction, (n_dims, n_samples_X, n_samples_Y)
+    x = X.reshape(n_dims, -1, 1) - Y.reshape(n_dims, 1, -1)
+    # l2 distance, (n_samples_X, n_samples_Y)
+    x = np.sum(x**2, axis=0)
+    # gausiann kernel, (n_samples_X, n_samples_Y)
+    x = np.exp(-0.5 * x / (sigma**2))
+    return x
 
 
 def linear_kernel(X, Y):
@@ -38,13 +48,13 @@ def linear_kernel(X, Y):
 
     Parameters
     ----------
-    X : array of shape (n_samples_X, n_features)
+    X : array of shape (n_dims, n_samples_X)
 
-    Y : array of shape (n_samples_Y, n_features)
+    Y : array of shape (n_dims, n_samples_Y)
 
     Returns:
     --------
     K : array-like, shape: (n_samples_X, n_samples_Y)
         Grammian matrix
     """
-    return X @ Y.T
+    return X.T @ Y

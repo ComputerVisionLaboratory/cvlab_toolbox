@@ -193,7 +193,7 @@ def subspace_bases(X, n_subdims=None):
     return V
 
 
-def dual_vectors(K, n_subdims=None, eigvals=None, truncate=None):
+def dual_vectors(K, n_subdims=None, higher=True, eps=1e-20):
     """
     Calc dual representation of vectors in kernel space
 
@@ -202,9 +202,14 @@ def dual_vectors(K, n_subdims=None, eigvals=None, truncate=None):
     K :  array-like, shape: (n_samples, n_samples)
         Grammian Matrix of X: K(X, X)
     n_subdims: int, default=None
-        number of vectors of dual vectors to return
-    eigvals: tuple, (lo, hi)
-        eigenvalues index range. if this is specified, n_subdims is ignored.
+        Number of vectors of dual vectors to return
+    higher: boolean, default=None
+        If True, this function returns eigenbasis corresponding to 
+            higher `n_subdims` eigenvalues in descending order.
+        If False, this function returns eigenbasis corresponding to 
+            lower `n_subdims` eigenvalues in descending order.
+    eps: float, default=1e-20
+        lower limit of eigenvalues
 
     Returns:
     --------
@@ -215,18 +220,18 @@ def dual_vectors(K, n_subdims=None, eigvals=None, truncate=None):
         Eigen values descending sorted
     """
 
-    if eigvals is None and n_subdims is not None:
-        n_vectors = K.shape[0]
-        eigvals = (n_vectors - n_subdims, n_vectors - 1)
+    n_samples = K.shape[0]
+    if n_subdims is not None and higher:
+        eigvals = (n_samples - n_subdims, n_samples - 1)
+    elif n_subdims is not None and not higher:
+        eigvals = (0, n_samples - 1)
+    else:
+        eigvals = None
 
     e, A = _eigen_basis(K, eigvals=eigvals)
 
-    if truncate is not None:
-        A = A[:, e > truncate]
-        e = e[e > truncate]
-
     # replace if there are too small eigenvalues
-    e[(e < 1e-20)] = 1e-20
+    e[(e < eps)] = eps
 
     A = A / np.sqrt(e)
 
