@@ -7,6 +7,7 @@ Subspace Method Interface
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
+from scipy.linalg import block_diag
 
 from cvt.utils import subspace_bases
 from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values
@@ -96,6 +97,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
         X: list of 2d-arrays, (n_classes, n_dims, n_samples)
         y: array, (n_classes)
         """
+
         dic = [subspace_bases(_X, self.n_subdims) for _X in X]
         # dic,  (n_classes, n_dims, n_subdims)
         dic = np.array(dic)
@@ -240,6 +242,97 @@ class ConstrainedSMBase(SMBase):
         self.gds = subspace_bases(all_bases, self.n_gds_dims, higher=False)
 
         dic = self._gds_projection(dic)
+        self.dic = dic
+
+
+class KernelCSMBase(SMBase):
+    """
+    Base class of Kernel Constrained Subspace Method
+    """
+
+    def __init__(self, n_subdims, n_gds_dims, normalize=False, sigma=None):
+        """
+        Parameters
+        ----------
+        n_subdims : int
+            The dimension of subspace. it must be smaller than the dimension of original space.
+
+        n_gds_dims : int
+            The dimension of Generalized Difference Subspace.
+
+        normalize : boolean, optional (default=True)
+            If this is True, all vectors are normalized as |v| = 1.
+        """
+        super(KernelCSMBase, self).__init__(n_subdims, normalize)
+
+        self.sigma = sigma
+        self.n_gds_dims = n_gds_dims
+        self.gds = None
+
+    def get_params(self, deep=True):
+        return {
+            'n_subdims': self.n_subdims,
+            'n_gds_dims': self.n_gds_dims,
+            'sigma': self.sigma,
+        }
+
+    def _fit(self, X, y):
+        """
+        Parameters
+        ----------
+        X: list of 2d-arrays, (n_classes, n_dims, n_samples)
+        y: array, (n_classes)
+        """
+
+        # mapings, (n_classes * n_samples)
+        mappings = np.array([
+            self.labels[i] for i, _X in enumerate(X)
+            for _ in range(_X.shape[1])
+        ])
+
+        # stack_X, (n_dims, n_classes * n_samples)
+        stack_X = np.hstack(X)
+
+        # K, (n_classes * n_samples, n_classes * n_samples)
+        K = rbf_kernel(stack_X, stack_X, self.sigma)
+
+        coeff = []
+        for i, _ in enumerate(X):
+            p = (mappings == y[i])
+            # clipping K(X[y==c], X[y==c])
+            # _K, (n_samples_i, n_samples_i)
+            _K = K[p][:, p]
+            _coeff, _ = dual_vectors(_K, self.n_subdims)
+            coeff.append(_coeff)
+        # coeff, (n_classes * n_samples, n_classes * n_subdims)
+        coeff = block_diag(*coeff)
+
+        # gramian, (n_classes * n_subdims, n_classes * n_subdims)
+        gramian = coeff.T @ K @ coeff
+        # coefficients of `bases in feature space` to get GDS bases in feature space
+        # gds_coeff, (n_classes * n_subdims, n_gds_dims)
+        gds_coeff, _ = dual_vectors(gramian, self.n_gds_dims, higher=False)
+
+        # coefficients of `given data X in feature space` to get GDS bases in features space
+        # gds_coeff, (n_classes * n_samples, n_gds_dims)
+        gds_coeff = np.dot(coeff, gds_coeff)
+
+        # X_gds = (GDS bases in feature space).T @ (X_stacked in feature space)
+        # projection coefficients of GDS in feature space.
+        # this vectors have finite dimension, such as n_gds_dims,
+        # and these vectors can treat as linear feature.
+        # X_gds, (n_gds_dims, n_classes * n_samples)
+        X_gds = np.dot(gds_coeff.T, K)
+        # X_gds, (n_classes, n_gds_dims, n_samples)
+        X_gds = [X_gds[:, mappings == y[i]] for i, _ in enumerate(X)]
+
+        # dic, (n_classes, n_dims, n_subdims)
+        dic = [subspace_bases(_X, self.n_subdims) for _X in X_gds]
+        dic = np.array(dic)
+
+        self.train_stack_X = stack_X
+        self.mappings = mappings
+        self.gds_coeff = gds_coeff
         self.dic = dic
 
 

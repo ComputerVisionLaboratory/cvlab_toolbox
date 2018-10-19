@@ -7,7 +7,7 @@ Mutual Subspace Method
 import numpy as np
 
 from .base_class import SMBase, MSMInterface
-from cvt.utils import subspace_bases, mean_square_singular_values
+from cvt.utils import subspace_bases
 
 
 class MutualSubspaceMethod(MSMInterface, SMBase):
@@ -31,6 +31,6 @@ class MutualSubspaceMethod(MSMInterface, SMBase):
         bases = subspace_bases(X, self.n_subdims)
 
         # grammians, (n_classes, n_subdims, n_subdims)
-        grammians = np.dot(self.dic.transpose(0, 2, 1), bases)
+        gramians = np.dot(self.dic.transpose(0, 2, 1), bases)
 
-        return grammians
+        return gramians

@@ -8,7 +8,7 @@ from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 
 from .base_class import KernelSMBase, MSMInterface
-from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values
+from cvt.utils import rbf_kernel, dual_vectors
 
 
 class KernelMSM(MSMInterface, KernelSMBase):
