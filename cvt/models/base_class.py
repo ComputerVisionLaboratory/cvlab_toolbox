@@ -21,8 +21,8 @@ class SMBase(BaseEstimator, ClassifierMixin):
         """
         Parameters
         ----------
-        n_subdims : int, optional (default=3)
-            A dimension of subspace. it must be smaller than the dimension of original space.
+        n_subdims : int
+            The dimension of subspace. it must be smaller than the dimension of original space.
 
         normalize : boolean, optional (default=True)
             If this is True, all vectors are normalized as |v| = 1
@@ -97,6 +97,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
         y: array, (n_classes)
         """
         dic = [subspace_bases(_X, self.n_subdims) for _X in X]
+        # dic,  (n_classes, n_dims, n_subdims)
         dic = np.array(dic)
         self.dic = dic
 
@@ -140,8 +141,8 @@ class KernelSMBase(SMBase):
         """
         Parameters
         ----------
-        n_subdims : int, optional (default=3)
-            A dimension of subspace. it must be smaller than the dimension of original space.
+        n_subdims : int
+            The dimension of subspace. it must be smaller than the dimension of original space.
 
         normalize : boolean, optional (default=True)
             If this is True, all vectors are normalized as |v| = 1
@@ -171,7 +172,75 @@ class KernelSMBase(SMBase):
             _coeff, _ = dual_vectors(K, self.n_subdims)
             coeff.append(_coeff)
 
-        self.dict = list(zip(X, coeff))
+        self.dic = list(zip(X, coeff))
+
+
+class ConstrainedSMBase(SMBase):
+    """
+    Base class of Constrained Subspace Method
+    """
+
+    def __init__(self, n_subdims, n_gds_dims, normalize=False):
+        """
+        Parameters
+        ----------
+        n_subdims : int
+            The dimension of subspace. it must be smaller than the dimension of original space.
+
+        n_gds_dims : int
+            The dimension of Generalized Difference Subspace.
+
+        normalize : boolean, optional (default=True)
+            If this is True, all vectors are normalized as |v| = 1.
+        """
+        super(ConstrainedSMBase, self).__init__(n_subdims, normalize)
+        self.n_gds_dims = n_gds_dims
+        self.gds = None
+
+    def get_params(self, deep=True):
+        return {
+            'n_subdims': self.n_subdims,
+            'n_gds_dims': self.n_gds_dims,
+        }
+
+    def _gds_projection(self, bases):
+        """
+        GDS projection.
+        Projected bases will be normalized and orthogonalized.
+
+        Parameters
+        ----------
+        bases: arrays, (n_dims, n_subdims)
+
+        Returns
+        -------
+        bases: arrays, (n_gds_dims, n_subdims)
+        """
+
+        # bases_proj, (n_gds_dims, n_subdims)
+        bases_proj = np.matmul(self.gds.T, bases)
+        qr = np.vectorize(np.linalg.qr, signature='(n,m)->(n,m),(m,m)')
+        bases, _ = qr(bases_proj)
+        return bases
+
+    def _fit(self, X, y):
+        """
+        Parameters
+        ----------
+        X: list of 2d-arrays, (n_classes, n_dims, n_samples)
+        y: array, (n_classes)
+        """
+
+        dic = [subspace_bases(_X, self.n_subdims) for _X in X]
+        # dic,  (n_classes, n_dims, n_subdims)
+        dic = np.array(dic)
+        # all_bases, (n_dims, n_classes * n_subdims)
+        all_bases = np.hstack(dic)
+        # gds, (n_dims, n_gds_dims)
+        self.gds = subspace_bases(all_bases, self.n_gds_dims, higher=False)
+
+        dic = self._gds_projection(dic)
+        self.dic = dic
 
 
 class MSMInterface(object):
@@ -198,13 +267,28 @@ class MSMInterface(object):
         # preprocessing data matricies
         X = self._prepare(X)
 
-        pred = self._predict(X)
+        pred = []
+        for _X in X:
+            # gramians, (n_classes, n_subdims, n_subdims)
+            gramians = self._get_gramians(_X)
+
+            # i_th singular value of grammian of subspace bases is
+            # square root of cosine of i_th cannonical angles
+            # average of square of them is caonnonical angle between subspaces
+            c = [mean_square_singular_values(g) for g in gramians]
+            pred.append(self.labels[np.argmax(c)])
+        pred = np.array(pred)
         return self.le.inverse_transform(pred)
 
-    def _predict(self, X):
+    def _get_gramians(self, X):
         """
         Parameters
         ----------
-        X: list of 2d-arrays, (n_vector_sets, n_dims, n_samples)
+        X: array, (n_dims, n_samples)
+
+        Returns
+        -------
+        G: array, (n_class, n_subdims, n_subdims)
+            gramian matricies of references of each class
         """
-        raise NotImplementedError('_predict is not implemented')
+        raise NotImplementedError('_get_gramians is not implemented')

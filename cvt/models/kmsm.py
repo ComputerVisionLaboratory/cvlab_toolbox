@@ -16,26 +16,35 @@ class KernelMSM(MSMInterface, KernelSMBase):
     Kernel Mutual Subspace Method
     """
 
-    def _predict(self, X):
+    def _get_gramians(self, X):
         """
         Parameters
         ----------
-        X: list of 2d-arrays, (n_vector_sets, n_dims, n_samples)
+        X: array, (n_dims, n_samples)
+
+        Returns
+        -------
+        G: array, (n_class, n_subdims, n_subdims)
+            gramian matricies of references of each class
         """
 
-        pred = []
-        for _X in X:
-            K = rbf_kernel(_X, _X, self.sigma)
-            in_coeff, _ = dual_vectors(K, self.n_subdims)
+        # _X, (n_dims, n_samples)
+        # K, (n_samples, n_samples)
+        K = rbf_kernel(X, X, self.sigma)
+        # in_coeff, (n_samles, n_subdims)
+        in_coeff, _ = dual_vectors(K, self.n_subdims)
 
-            c = []
-            for i in range(self.n_classes):
-                ref_X, ref_coeff = self.dict[i]
+        gramians = []
+        for i in range(self.n_classes):
+            # ref_X, (n_dims, n_samples_ref_X)
+            # ref_coeff, (n_samples_ref_X, n_subdims)
+            ref_X, ref_coeff = self.dic[i]
 
-                _K = rbf_kernel(ref_X, _X)
-                S = ref_coeff.T.dot(_K).dot(in_coeff)
-                _c = mean_square_singular_values(S)
-                c.append(_c)
-            pred.append(self.labels[np.argmax(c)])
-        pred = np.array(pred)
-        return pred
+            # _K, (n_samples_ref_X, n_samples)
+            _K = rbf_kernel(ref_X, X)
+            # S, (n_subdims, n_subdims)
+            S = ref_coeff.T.dot(_K.dot(in_coeff))
+
+            gramians.append(S)
+
+        return np.array(gramians)

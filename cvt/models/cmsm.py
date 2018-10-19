@@ -1,18 +1,18 @@
 """
-Mutual Subspace Method
+Constrained Mutual Subspace Method
 """
 
 # Authors: Junki Ishikawa
 
 import numpy as np
 
-from .base_class import SMBase, MSMInterface
+from .base_class import ConstrainedSMBase, MSMInterface
 from cvt.utils import subspace_bases, mean_square_singular_values
 
 
-class MutualSubspaceMethod(MSMInterface, SMBase):
+class ConstrainedMSM(MSMInterface, ConstrainedSMBase):
     """
-    Mutual Subspace Method
+    Constrained Mutual Subspace Method
     """
 
     def _get_gramians(self, X):
@@ -29,8 +29,10 @@ class MutualSubspaceMethod(MSMInterface, SMBase):
 
         # bases, (n_dims, n_subdims)
         bases = subspace_bases(X, self.n_subdims)
+        # bases, (n_gds_dims, n_subdims)
+        bases = self._gds_projection(bases)
 
-        # grammians, (n_classes, n_subdims, n_subdims)
-        grammians = np.dot(self.dic.transpose(0, 2, 1), bases)
+        # gramians, (n_classes, n_subdims, n_subdims)
+        gramians = np.dot(self.dic.transpose(0, 2, 1), bases)
 
-        return grammians
+        return gramians

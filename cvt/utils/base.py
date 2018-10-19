@@ -164,7 +164,30 @@ def _eigen_basis(X, eigvals=None):
     return e, V
 
 
-def subspace_bases(X, n_subdims=None):
+def _get_eigvals(n, n_subdims, higher):
+    """
+    Culculate eigvals for eigh
+    
+    Parameters
+    ----------
+    n: int
+    n_subdims: int, dimension of subspace
+    higher: boolean, if True, use higher `n_subdim` basis
+
+    Returns
+    -------
+    eigvals: tuple of 2 integers
+    """
+
+    if n_subdims is not None and higher:
+        return (n - n_subdims, n - 1)
+    elif n_subdims is not None and not higher:
+        return (0, n - 1)
+    else:
+        return None
+
+
+def subspace_bases(X, n_subdims=None, higher=True):
     """
     Return subspace basis using PCA
 
@@ -180,12 +203,7 @@ def subspace_bases(X, n_subdims=None):
     V: array-like, shape (n_dimensions, n_subdims)
         bases matrix
     """
-
-    if n_subdims is not None:
-        last = X.shape[0]
-        eigvals = (last - n_subdims, last - 1)
-    else:
-        eigvals = None
+    eigvals = _get_eigvals(X.shape[0], n_subdims, higher)
 
     # get eigenvector of autocorrelation matrix X @ X.T
     _, V = _eigen_basis(np.dot(X, X.T), eigvals=eigvals)
@@ -220,14 +238,7 @@ def dual_vectors(K, n_subdims=None, higher=True, eps=1e-20):
         Eigen values descending sorted
     """
 
-    n_samples = K.shape[0]
-    if n_subdims is not None and higher:
-        eigvals = (n_samples - n_subdims, n_samples - 1)
-    elif n_subdims is not None and not higher:
-        eigvals = (0, n_samples - 1)
-    else:
-        eigvals = None
-
+    eigvals = _get_eigvals(K.shape[0], n_subdims, higher)
     e, A = _eigen_basis(K, eigvals=eigvals)
 
     # replace if there are too small eigenvalues
