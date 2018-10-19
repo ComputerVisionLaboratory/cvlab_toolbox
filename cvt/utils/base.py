@@ -9,6 +9,7 @@ import numpy as np
 from scipy.linalg import eigh
 from numba import jit
 
+
 @jit
 def mean_square_singular_values(X):
     """
@@ -99,7 +100,7 @@ def canonical_angle_matrix_f(X, Y):
     D = np.dot(Y, X)
     _D = np.transpose(D, (0, 2, 1, 3))
     _, C, _ = np.linalg.svd(_D)
-    sim = C ** 2
+    sim = C**2
     return sim.mean(2)
 
 
@@ -132,7 +133,6 @@ def _eigh(X, eigvals=None):
     e, V = e[::-1], V[:, ::-1]
 
     return e, V
-
 
 
 def _eigen_basis(X, eigvals=None):
@@ -185,11 +185,11 @@ def subspace_bases(X, n_subdims=None):
         last = X.shape[0]
         eigvals = (last - n_subdims, last - 1)
     else:
-        eigvals = None    
-    
+        eigvals = None
+
     # get eigenvector of autocorrelation matrix X @ X.T
     _, V = _eigen_basis(np.dot(X, X.T), eigvals=eigvals)
-    
+
     return V
 
 

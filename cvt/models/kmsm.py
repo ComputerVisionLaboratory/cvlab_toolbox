@@ -4,14 +4,14 @@ Kernel Mutual Subspace Method
 
 # Authors: Junki Ishikawa
 
-from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 
+from .interfaces import MSMBase
 from cvt.utils import rbf_kernel, dual_vectors, mean_square_singular_values
 
 
-class KernelMSM(BaseEstimator, ClassifierMixin):
+class KernelMSM(MSMBase):
     """
     Kernel Mutual Subspace Method
 
