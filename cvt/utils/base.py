@@ -26,7 +26,8 @@ def mean_square_singular_values(X):
     # _, s, _ = np.linalg.svd(X)
     # mssv = (s ** 2).mean()
 
-    # Frobenius norm means square root of sum of square singular values
+    # Frobenius norm means square root of
+    # sum of square singular values
     mssv = (X * X).sum() / min(X.shape)
     return mssv
 
@@ -95,7 +96,7 @@ def canonical_angle_matrix_f(X, Y):
 
     """
     X = np.transpose(X, (0, 2, 1))
-    D = Y.dot(X)
+    D = np.dot(Y, X)
     _D = np.transpose(D, (0, 2, 1, 3))
     _, C, _ = np.linalg.svd(_D)
     sim = C ** 2
@@ -109,7 +110,7 @@ def _eigh(X, eigvals=None):
     Parameters
     ----------
     X: array-like, shape (a, a)
-        target matrix
+        target symmetric matrix
     eigvals: tuple, (lo, hi)
         Indexes of the smallest and largest (in ascending order) eigenvalues and corresponding eigenvectors
         to be returned: 0 <= lo <= hi <= M-1. If omitted, all eigenvalues and eigenvectors are returned.
@@ -181,13 +182,14 @@ def subspace_bases(X, n_subdims=None):
     """
 
     if n_subdims is not None:
-        last = X.shape[0] - 1
-        eigvals = (last - n_subdims, last)
+        last = X.shape[0]
+        eigvals = (last - n_subdims, last - 1)
     else:
-        eigvals = None
-
-    _, V = _eigen_basis(X @ X.T, eigvals=eigvals)
-
+        eigvals = None    
+    
+    # get eigenvector of autocorrelation matrix X @ X.T
+    _, V = _eigen_basis(np.dot(X, X.T), eigvals=eigvals)
+    
     return V
 
 
