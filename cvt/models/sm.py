@@ -21,10 +21,11 @@ class SubspaceMethod(SMBase):
         ----------
         X: arrays, (n_dims, n_samples)
         """
-        # self.dic shapes (n_classes, n_dims, n_subdims)
+        # self.dic shapes (n_classes, n_dims, n_subdims or greater)
         # this line is projection to reference subspaces
         # proj, (n_classes, n_subdims, n_samples)
-        proj = np.dot(self.dic.transpose(0, 2, 1), X)
+        dic = self.dic[:, :, :self.n_subdims]
+        proj = np.dot(dic.transpose(0, 2, 1), X)
 
         # length, (n_classes, n_samples)
         square_length = (proj**2).sum(axis=1)

@@ -30,7 +30,8 @@ class MutualSubspaceMethod(MSMInterface, SMBase):
         # bases, (n_dims, n_subdims)
         bases = subspace_bases(X, self.n_subdims)
 
-        # grammians, (n_classes, n_subdims, n_subdims)
-        gramians = np.dot(self.dic.transpose(0, 2, 1), bases)
+        # grammians, (n_classes, n_subdims, n_subdims or greater)
+        dic = self.dic[:, :, :self.n_subdims]
+        gramians = np.dot(dic.transpose(0, 2, 1), bases)
 
         return gramians

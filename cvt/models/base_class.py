@@ -3,8 +3,10 @@ Subspace Method Interface
 """
 
 # Authors: Junki Ishikawa
-
+import itertools
+import pandas as pd
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.preprocessing import normalize as _normalize, LabelEncoder
 import numpy as np
 from scipy.linalg import block_diag
@@ -17,6 +19,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
     """
     Base class of Subspace Method
     """
+    param_names = {'normalize', 'n_subdims'}
 
     def __init__(self, n_subdims, normalize=False):
         """
@@ -34,16 +37,17 @@ class SMBase(BaseEstimator, ClassifierMixin):
         self.dic = None
         self.labels = None
         self.n_classes = None
+        self.params = ()
 
     def get_params(self):
-        return {'n_subdims': self.n_subdims, 'normalize': self.normalize}
+        return {name: getattr(self, name) for name in self.param_names}
 
     def set_params(self, **parameters):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
         return self
 
-    def _prepare(self, X):
+    def _prepare_X(self, X):
         """
         preprocessing data matricies X.
         normalize and transpose
@@ -62,6 +66,16 @@ class SMBase(BaseEstimator, ClassifierMixin):
 
         return X
 
+    def _prepare_y(self, y):
+        # converted labels
+        y = self.le.fit_transform(y)
+        self.labels = y
+
+        # number of classes
+        self.n_classes = self.le.classes_.size
+
+        return y
+
     def fit(self, X, y):
         """
         Fit the model using the given data and parameters
@@ -79,14 +93,8 @@ class SMBase(BaseEstimator, ClassifierMixin):
 
         # preprocessing data matricies
         # ! X[i] will transposed for conventional
-        X = self._prepare(X)
-
-        # converted labels
-        y = self.le.fit_transform(y)
-        self.labels = y
-
-        # number of classes
-        self.n_classes = self.le.classes_.size
+        X = self._prepare_X(X)
+        y = self._prepare_y(y)
 
         self._fit(X, y)
 
@@ -120,7 +128,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
         """
 
         # preprocessing data matricies
-        X = self._prepare([X])[0]
+        X = self._prepare_X([X])[0]
 
         pred = self._predict(X)
         return self.le.inverse_transform(pred)
@@ -133,11 +141,96 @@ class SMBase(BaseEstimator, ClassifierMixin):
         """
         raise NotImplementedError('_predict is not implemented')
 
+    @classmethod
+    def grid_search(self, X, y, cv=3, stratified=False, **options):
+        """
+        Grid search function.
+        Search the best hyper-parameters using given parameters
+
+        Parameters
+        ----------
+        X: list of 2d-arrays, (n_classes, n_samples, n_dims)
+            Training vectors. n_classes is count of classes.
+            n_samples is number of vectors of samples, this is variable across each classes.
+            n_dims is number of dimentions of vectors.
+
+        y: integer array, (n_classes)
+            Class labels of training vectors. 
+
+        cv: integer, default=3
+            Number of folds
+
+        opitions: dict of lists
+            Search range of parameters.
+            All of params in class variable `param_names` is necessary.
+        """
+        error = set(options.keys()) - self.param_names
+        assert not error, 'irregular parameters: {0}'.format(', '.join(error))
+
+        error = self.param_names - set(options.keys())
+        assert not error, 'necessary parameters: {0}'.format(', '.join(error))
+
+        iterable = lambda v: v if hasattr(v, '__iter__') else list(v)
+        options = {k: iterable(v) for k, v in options.items()}
+        return self._grid_search(X, y, cv, stratified, **options)
+
+    @classmethod
+    def _grid_search(self, X, y, cv, stratified, **options):
+        n_samples = [_X.shape[0] for _X in X]
+        stacked_X = np.vstack(X)
+        stacked_y = np.array(
+            [l for l, n in zip(y, n_samples) for _ in range(n)])
+        if stratified:
+            kfold = StratifiedKFold(n_splits=cv, shuffle=True)
+        else:
+            kfold = KFold(n_splits=cv, shuffle=True)
+
+        result = []
+        for i, (train, test) in enumerate(kfold.split(stacked_X, stacked_y)):
+            train_flag = [(stacked_y[train] == l).any() for l in y]
+            test_flag = [(stacked_y[test] == l).any() for l in y]
+            X_train = [
+                stacked_X[train][stacked_y[train] == l]
+                for l, f in zip(y, train_flag) if f
+            ]
+            X_test = [
+                stacked_X[test][stacked_y[test] == l]
+                for l, f in zip(y, test_flag) if f
+            ]
+            y_train = np.array([l for l, f in zip(y, train_flag) if f])
+            y_test = np.array([l for l, f in zip(y, test_flag) if f])
+
+            misc = self.param_names - {'n_subdims'}
+            misc = list(misc)
+
+            for cond in itertools.product(*[options[name] for name in misc]):
+                cond = {name: value for name, value in zip(misc, cond)}
+                max_model = self(n_subdims=max(options['n_subdims']), **cond)
+                max_model.fit(X_train, y_train)
+                for n_subdims in options['n_subdims']:
+                    model = self(n_subdims=n_subdims, **cond)
+                    # model.labels = max_model.labels
+                    # model.le = max_model.le
+                    # model.dic = max_model.dic
+                    # model.n_classes = max_model.n_classes
+                    model.fit(X_train, y_train)
+                    pred = model.predict(X_test)
+                    score = (pred == y_test).mean()
+                    result.append(
+                        dict(i=i, score=score, n_subdims=n_subdims, **cond))
+
+        result = pd.DataFrame(result)
+        result = result.groupby(list(options.keys())).agg({
+            'score': 'mean'
+        }).reset_index()
+        return result
+
 
 class KernelSMBase(SMBase):
     """
     Base class of Kernel Subspace Method
     """
+    param_names = {'normalize', 'n_subdims', 'sigma'}
 
     def __init__(self, n_subdims, normalize=False, sigma=None):
         """
@@ -154,12 +247,6 @@ class KernelSMBase(SMBase):
         """
         super(KernelSMBase, self).__init__(n_subdims, normalize)
         self.sigma = sigma
-
-    def get_params(self, deep=True):
-        return {
-            'n_subdims': self.n_subdims,
-            'sigma': self.sigma,
-        }
 
     def _fit(self, X, y):
         """
@@ -181,6 +268,7 @@ class ConstrainedSMBase(SMBase):
     """
     Base class of Constrained Subspace Method
     """
+    param_names = {'normalize', 'n_subdims', 'n_gds_dims'}
 
     def __init__(self, n_subdims, n_gds_dims, normalize=False):
         """
@@ -198,12 +286,6 @@ class ConstrainedSMBase(SMBase):
         super(ConstrainedSMBase, self).__init__(n_subdims, normalize)
         self.n_gds_dims = n_gds_dims
         self.gds = None
-
-    def get_params(self, deep=True):
-        return {
-            'n_subdims': self.n_subdims,
-            'n_gds_dims': self.n_gds_dims,
-        }
 
     def _gds_projection(self, bases):
         """
@@ -249,6 +331,7 @@ class KernelCSMBase(SMBase):
     """
     Base class of Kernel Constrained Subspace Method
     """
+    param_names = {'normalize', 'n_subdims', 'sigma', 'n_gds_dims'}
 
     def __init__(self, n_subdims, n_gds_dims, normalize=False, sigma=None):
         """
@@ -268,13 +351,6 @@ class KernelCSMBase(SMBase):
         self.sigma = sigma
         self.n_gds_dims = n_gds_dims
         self.gds = None
-
-    def get_params(self, deep=True):
-        return {
-            'n_subdims': self.n_subdims,
-            'n_gds_dims': self.n_gds_dims,
-            'sigma': self.sigma,
-        }
 
     def _fit(self, X, y):
         """
@@ -358,7 +434,7 @@ class MSMInterface(object):
         """
 
         # preprocessing data matricies
-        X = self._prepare(X)
+        X = self._prepare_X(X)
 
         pred = []
         for _X in X:

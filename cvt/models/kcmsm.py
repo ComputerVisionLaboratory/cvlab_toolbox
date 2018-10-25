@@ -11,6 +11,7 @@ from scipy.linalg import block_diag
 
 from .base_class import KernelCSMBase, MSMInterface
 from cvt.utils import rbf_kernel
+from cvt.utils import subspace_bases
 
 
 class KernelCMSM(MSMInterface, KernelCSMBase):
