@@ -32,10 +32,11 @@ def rbf_kernel(X, Y, sigma=None):
     if sigma is None:
         sigma = np.sqrt(n_dims / 2)
 
-    # subtraction, (n_dims, n_samples_X, n_samples_Y)
-    x = X.reshape(n_dims, -1, 1) - Y.reshape(n_dims, 1, -1)
-    # l2 distance, (n_samples_X, n_samples_Y)
-    x = np.sum(x**2, axis=0)
+    # |x-y|^2 = |x|^2 - 2x@y + |y|^2
+    XX = (X**2).sum(axis=0)[:, None]
+    YY = (Y**2).sum(axis=0)[None, :]
+    x = XX - 2 * (X.T @ Y) + YY
+
     # gausiann kernel, (n_samples_X, n_samples_Y)
     x = np.exp(-0.5 * x / (sigma**2))
     return x

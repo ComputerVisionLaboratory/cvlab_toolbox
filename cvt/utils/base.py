@@ -7,10 +7,8 @@ Mathematical utilities
 
 import numpy as np
 from scipy.linalg import eigh
-from numba import jit
 
 
-@jit
 def mean_square_singular_values(X):
     """
     calculate mean square of singular values of X
@@ -33,7 +31,6 @@ def mean_square_singular_values(X):
     return mssv
 
 
-@jit
 def canonical_angle(X, Y):
     """
     Calculate cannonical angles beween subspaces
@@ -52,7 +49,6 @@ def canonical_angle(X, Y):
     return mean_square_singular_values(Y @ X.T)
 
 
-@jit
 def canonical_angle_matrix(X, Y):
     """Calculate canonical angles between subspaces
     example     similarity = MathUtils.calc_basis_vector(X, Y)
@@ -249,7 +245,6 @@ def dual_vectors(K, n_subdims=None, higher=True, eps=1e-20):
     return A, e
 
 
-@jit
 def cross_similarities(refs, inputs):
     """
     Calc similarities between each reference spaces and each input subspaces
