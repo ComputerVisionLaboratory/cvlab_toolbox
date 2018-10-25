@@ -320,8 +320,15 @@ class ConstrainedSMBase(SMBase):
         dic = np.array(dic)
         # all_bases, (n_dims, n_classes * n_subdims)
         all_bases = np.hstack(dic)
+
+        # n_gds_dims
+        if 0.0 < self.n_gds_dims <= 1.0:
+            n_gds_dims = int(all_bases.shape[1] * self.n_gds_dims)
+        else:
+            n_gds_dims = self.n_gds_dims
+
         # gds, (n_dims, n_gds_dims)
-        self.gds = subspace_bases(all_bases, self.n_gds_dims, higher=False)
+        self.gds = subspace_bases(all_bases, n_gds_dims, higher=False)
 
         dic = self._gds_projection(dic)
         self.dic = dic
@@ -385,9 +392,16 @@ class KernelCSMBase(SMBase):
 
         # gramian, (n_classes * n_subdims, n_classes * n_subdims)
         gramian = coeff.T @ K @ coeff
+
+        # n_gds_dims
+        if 0.0 < self.n_gds_dims <= 1.0:
+            n_gds_dims = int(gramian.shape[0] * self.n_gds_dims)
+        else:
+            n_gds_dims = self.n_gds_dims
+
         # coefficients of `bases in feature space` to get GDS bases in feature space
         # gds_coeff, (n_classes * n_subdims, n_gds_dims)
-        gds_coeff, _ = dual_vectors(gramian, self.n_gds_dims, higher=False)
+        gds_coeff, _ = dual_vectors(gramian, n_gds_dims, higher=False)
 
         # coefficients of `given data X in feature space` to get GDS bases in features space
         # gds_coeff, (n_classes * n_samples, n_gds_dims)
