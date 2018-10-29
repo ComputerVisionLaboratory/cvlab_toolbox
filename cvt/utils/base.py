@@ -176,9 +176,11 @@ def _get_eigvals(n, n_subdims, higher):
     """
 
     if n_subdims is not None and higher:
-        return (n - n_subdims, n - 1)
+        low = max(0, n - n_subdims)
+        high = n - 1
     elif n_subdims is not None and not higher:
-        return (0, n - 1)
+        low = 0
+        high = min(n-1, n_subdims - 1)
     else:
         return None
 
