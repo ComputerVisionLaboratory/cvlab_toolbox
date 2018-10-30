@@ -39,7 +39,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
         self.n_classes = None
         self.params = ()
 
-    def get_params(self):
+    def get_params(self, deep=True):
         return {name: getattr(self, name) for name in self.param_names}
 
     def set_params(self, **parameters):
