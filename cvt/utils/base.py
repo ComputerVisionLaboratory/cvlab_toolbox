@@ -180,7 +180,7 @@ def _get_eigvals(n, n_subdims, higher):
         high = n - 1
     elif n_subdims is not None and not higher:
         low = 0
-        high = min(n-1, n_subdims - 1)
+        high = min(n - 1, n_subdims - 1)
     else:
         return None
 

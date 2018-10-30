@@ -35,7 +35,7 @@ class KernelMSM(MSMInterface, KernelSMBase):
         in_coeff, _ = dual_vectors(K, self.n_subdims)
 
         gramians = []
-        for i in range(self.n_classes):
+        for i in range(self.n_data):
             # ref_X, (n_dims, n_samples_ref_X)
             # ref_coeff, (n_samples_ref_X, n_subdims)
             ref_X, ref_coeff = self.dic[i]

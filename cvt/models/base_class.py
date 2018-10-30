@@ -74,6 +74,9 @@ class SMBase(BaseEstimator, ClassifierMixin):
         # number of classes
         self.n_classes = self.le.classes_.size
 
+        # number of data
+        self.n_data = len(y)
+
         return y
 
     def fit(self, X, y):
