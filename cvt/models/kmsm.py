@@ -110,7 +110,7 @@ class KernelMSM(BaseEstimator, ClassifierMixin):
                 A, _ = dual_vectors(K, n_subdims)
                 train_X = self.train_X[i]
                 _K = self.kernel_func(train_X, _X)
-                S = self.A[i] @ _K @ A.T
+                S = self.A[i].T @ _K @ A
                 _c = mean_square_singular_values(S)
                 c.append(_c)
             pred.append(self.labels[np.argmax(c)])
