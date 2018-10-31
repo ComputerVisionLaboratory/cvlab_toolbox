@@ -116,7 +116,26 @@ class SMBase(BaseEstimator, ClassifierMixin):
 
     def predict(self, X):
         """
-        Predict each classes
+        Predict classes
+
+        Parameters:
+        -----------
+        X: list of 2d-arrays, (n_vector_sets, n_samples, n_dims)
+            List of input vector sets.
+
+        Returns:
+        --------
+        pred: array, (n_vector_sets)
+            Prediction array
+
+        """
+        pred = self.predict_proba(X)
+        pred = self.labels[np.argmax(pred, axis=1)]
+        return self.le.inverse_transform(pred)
+
+    def predict_proba(self, X):
+        """
+        Predict class probabilities
 
         Parameters:
         -----------
@@ -132,11 +151,10 @@ class SMBase(BaseEstimator, ClassifierMixin):
 
         # preprocessing data matricies
         X = self._prepare_X([X])[0]
+        pred = self._predict_proba(X)
+        return pred
 
-        pred = self._predict(X)
-        return self.le.inverse_transform(pred)
-
-    def _predict(self, X):
+    def _predict_proba(self, X):
         """
         Parameters
         ----------
@@ -212,10 +230,6 @@ class SMBase(BaseEstimator, ClassifierMixin):
                 max_model.fit(X_train, y_train)
                 for n_subdims in options['n_subdims']:
                     model = self(n_subdims=n_subdims, **cond)
-                    # model.labels = max_model.labels
-                    # model.le = max_model.le
-                    # model.dic = max_model.dic
-                    # model.n_classes = max_model.n_classes
                     model.fit(X_train, y_train)
                     pred = model.predict(X_test)
                     score = (pred == y_test).mean()
@@ -434,9 +448,9 @@ class MSMInterface(object):
     Prediction interface of Mutual Subspace Method
     """
 
-    def predict(self, X):
+    def predict_proba(self, X):
         """
-        Predict each classes
+        Predict class probabilities
 
         Parameters:
         -----------
@@ -462,9 +476,8 @@ class MSMInterface(object):
             # square root of cosine of i_th cannonical angles
             # average of square of them is caonnonical angle between subspaces
             c = [mean_square_singular_values(g) for g in gramians]
-            pred.append(self.labels[np.argmax(c)])
-        pred = np.array(pred)
-        return self.le.inverse_transform(pred)
+            pred.append(c)
+        return np.array(pred)
 
     def _get_gramians(self, X):
         """

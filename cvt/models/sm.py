@@ -15,7 +15,7 @@ class SubspaceMethod(SMBase):
     Mutual Subspace Method
     """
 
-    def _predict(self, X):
+    def _predict_proba(self, X):
         """
         Parameters
         ----------
@@ -28,9 +28,7 @@ class SubspaceMethod(SMBase):
         proj = np.dot(dic.transpose(0, 2, 1), X)
 
         # length, (n_classes, n_samples)
-        square_length = (proj**2).sum(axis=1)
-
-        pred = np.argmax(square_length, axis=0)
-        print(self.labels)
-        pred = self.labels[pred]
-        return pred
+        length = np.sqrt((proj**2).sum(axis=1))
+        # proba, (n_samples, n_classes)
+        proba = (length / np.linalg.norm(X, axis=0)).T
+        return proba
