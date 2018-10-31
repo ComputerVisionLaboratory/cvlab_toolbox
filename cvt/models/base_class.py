@@ -129,8 +129,11 @@ class SMBase(BaseEstimator, ClassifierMixin):
             Prediction array
 
         """
-        pred = self.predict_proba(X)
-        pred = self.labels[np.argmax(pred, axis=1)]
+        proba = self.predict_proba(X)
+        return self.proba2class(proba)
+
+    def proba2class(self, proba):
+        pred = self.labels[np.argmax(proba, axis=1)]
         return self.le.inverse_transform(pred)
 
     def predict_proba(self, X):
