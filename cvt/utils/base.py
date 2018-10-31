@@ -175,14 +175,17 @@ def _get_eigvals(n, n_subdims, higher):
     eigvals: tuple of 2 integers
     """
 
-    if n_subdims is not None and higher:
+    if n_subdims is None:
+        return None
+
+    if higher:
         low = max(0, n - n_subdims)
         high = n - 1
-    elif n_subdims is not None and not higher:
+    else:
         low = 0
         high = min(n - 1, n_subdims - 1)
-    else:
-        return None
+
+    return low, high
 
 
 def subspace_bases(X, n_subdims=None, higher=True):
