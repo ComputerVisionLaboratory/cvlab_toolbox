@@ -1,22 +1,43 @@
 # cvlab_toolbox
 This is the repository of CVLAB toolbox
 
+
 ## Usage
-- install by pip(SSH github access may be needed)
-  ```bash
-  pip install -U git+https://github.com/ComputerVisionLaboratory/cvlab_toolbox
-  ```
+- Scikit-learn API
+```python
+import numpy as np
+from numpy.random import randint, rand
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from cvt.models import KernelMSM
 
-- import `cvt` in python code
-  ```python
-  from cvt import foo
+dim = 100
+n_class = 4
+n_train, n_test = 20, 5
 
-  model = foo.Bar()
-  Bar.fit(X, y)
+# input data X is list of vector sets (list of 2d-arrays)
+X_train = [rand(randint(10, 20), dim) for i in range(n_train)]
+X_test = [rand(randint(10, 20), dim) for i in range(n_test)]
 
-  ...
+# labels y is 1d-array
+y_train = randint(0, n_class, n_train)
+y_test = randint(0, n_class, n_test)
 
-  ```
+model = KernelMSM(n_subdims=3, sigma=0.01)
+# fit
+model.fit(X_train, y_train)
+# predict
+pred = model.predict(X_test)
+
+print(accuracy_score(pred, y_test))
+
+```
+
+## Install
+- pip
+```bash
+pip install -U git+https://github.com/ComputerVisionLaboratory/cvlab_toolbox
+```
 
 ## Coding styles
 - Follow `PEP8` as much as possible
