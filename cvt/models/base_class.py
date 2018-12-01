@@ -21,7 +21,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
     """
     param_names = {'normalize', 'n_subdims'}
 
-    def __init__(self, n_subdims, normalize=False):
+    def __init__(self, n_subdims, normalize=False, faster_mode=False):
         """
         Parameters
         ----------
@@ -33,6 +33,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
         """
         self.n_subdims = n_subdims
         self.normalize = normalize
+        self.faster_mode = faster_mode
         self.le = LabelEncoder()
         self.dic = None
         self.labels = None
@@ -129,7 +130,11 @@ class SMBase(BaseEstimator, ClassifierMixin):
             Prediction array
 
         """
-        proba = self.predict_proba(X)
+        
+        if self.faster_mode and hasattr(self, 'fast_predict_proba'):
+            proba = self.fast_predict_proba(X)
+        else:
+            proba = self.predict_proba(X)
         return self.proba2class(proba)
 
     def proba2class(self, proba):
@@ -172,7 +177,7 @@ class KernelSMBase(SMBase):
     """
     param_names = {'normalize', 'n_subdims', 'sigma'}
 
-    def __init__(self, n_subdims, normalize=False, sigma=None):
+    def __init__(self, n_subdims, normalize=False, sigma=None, faster_mode=False):
         """
         Parameters
         ----------
@@ -185,7 +190,7 @@ class KernelSMBase(SMBase):
         sigma : int or str, optional (default=None)
             a parameter of rbf kernel. if sigma is None, sqrt(n_dims / 2) will be used.
         """
-        super(KernelSMBase, self).__init__(n_subdims, normalize)
+        super(KernelSMBase, self).__init__(n_subdims, normalize, faster_mode)
         self.sigma = sigma
 
     def _fit(self, X, y):
@@ -364,7 +369,6 @@ class KernelCSMBase(SMBase):
         self.mappings = mappings
         self.gds_coeff = gds_coeff
         self.dic = dic
-
 
 class MSMInterface(object):
     """
