@@ -47,7 +47,6 @@ class KernelMSM(MSMInterface, KernelSMBase):
             S = ref_coeff.T.dot(_K.dot(in_coeff))
 
             gramians.append(S)
-
         return np.array(gramians)
 
 
@@ -88,20 +87,20 @@ class KernelMSM(MSMInterface, KernelSMBase):
             K = rbf_kernel(_X, _X, self.sigma)
             in_coeff, _ = dual_vectors(K, self.n_subdims)
             in_coeffs.append(in_coeff)
-        in_mappings = [np.array([i for i in range(n_input) for _ in range(in_coeffs[i].shape[1])])]
+        in_mappings = np.array([i for i in range(n_input) for _ in range(in_coeffs[i].shape[1])])
         in_Xs = np.hstack(X)
         in_coeffs = block_diag(*in_coeffs)
         
-        K = rbf_kernel(ref_Xs, in_Xs)
+        K = rbf_kernel(in_Xs, ref_Xs)
         del ref_Xs, in_Xs
         
-        S = ref_coeffs.T.dot(K).dot(in_coeffs)
+        S = in_coeffs.T.dot(K).dot(ref_coeffs)
         del in_coeffs, ref_coeffs, K
         
         pred = np.zeros((n_input, n_ref), dtype=np.float64)
         for i in range(n_input):
             for j in range(n_ref):
-                pred[i, j] = mean_square_singular_values(S[ref_mappings==i][:, in_mappings==i])
+                pred[i, j] = mean_square_singular_values(S[in_mappings==i][:, ref_mappings==j])
         
         del S, X
         return np.array(pred)
