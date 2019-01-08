@@ -206,8 +206,13 @@ def subspace_bases(X, n_subdims=None, higher=True):
     """
     eigvals = _get_eigvals(X.shape[0], n_subdims, higher)
 
-    # get eigenvector of autocorrelation matrix X @ X.T
-    _, V = _eigen_basis(np.dot(X, X.T), eigvals=eigvals)
+    if X.shape[0] <= X.shape[1]:
+        # get eigenvectors of autocorrelation matrix X @ X.T
+        _, V = _eigen_basis(np.dot(X, X.T), eigvals=eigvals)
+    else:
+        # use linear kernel to get eigenvectors
+        A, _ = dual_vectors(np.dot(X.T, X), eigvals=eigvals)
+        V = np.dot(X, A)
 
     return V
 

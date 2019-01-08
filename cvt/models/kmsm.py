@@ -97,10 +97,15 @@ class KernelMSM(MSMInterface, KernelSMBase):
         S = in_coeffs.T.dot(K).dot(ref_coeffs)
         del in_coeffs, ref_coeffs, K
         
-        pred = np.zeros((n_input, n_ref), dtype=np.float64)
-        for i in range(n_input):
-            for j in range(n_ref):
-                pred[i, j] = mean_square_singular_values(S[in_mappings==i][:, ref_mappings==j])
+        # Split matrix into (n_input x n_ref) blocks
+        in_split = np.where(np.diff(np.pad(in_mappings, (1, 0), 'constant')))[0]
+        ref_split = np.where(np.diff(np.pad(ref_mappings, (1, 0), 'constant')))[0]
+        S = [np.hsplit(_S, ref_split) for _S in np.vsplit(S, in_split)]
+        
+        vmssv = np.vectorize(lambda i, j: mean_square_singular_values(S[i][j]))
+        pred = vmssv(*np.meshgrid(np.arange(n_input), np.arange(n_ref))).T
         
         del S, X
         return np.array(pred)
+
+    
