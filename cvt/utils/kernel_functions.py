@@ -8,6 +8,15 @@ import numpy as np
 from sklearn.metrics.pairwise import rbf_kernel as _rbf_kernel
 
 
+def l2_kernel(X, Y):
+    # |x-y|^2 = |x|^2 - 2x@y + |y|^2
+    XX = (X**2).sum(axis=0)[:, None]
+    YY = (Y**2).sum(axis=0)[None, :]
+    x = XX - 2 * (X.T @ Y) + YY
+    
+    return x
+
+
 def rbf_kernel(X, Y, sigma=None):
     """
     RBF kernel. this is a wrapper of sklearn.metrics.pairwise.rbf_kernel.
@@ -32,10 +41,7 @@ def rbf_kernel(X, Y, sigma=None):
     if sigma is None:
         sigma = np.sqrt(n_dims / 2)
 
-    # |x-y|^2 = |x|^2 - 2x@y + |y|^2
-    XX = (X**2).sum(axis=0)[:, None]
-    YY = (Y**2).sum(axis=0)[None, :]
-    x = XX - 2 * (X.T @ Y) + YY
+    x = l2_kernel(X, Y)
 
     # gausiann kernel, (n_samples_X, n_samples_Y)
     x = np.exp(-0.5 * x / (sigma**2))
