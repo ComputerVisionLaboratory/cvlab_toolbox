@@ -34,7 +34,7 @@ class KernelMSM(MSMInterface, KernelSMBase):
         K = rbf_kernel(X, X, self.sigma)
         # in_coeff, (n_samles, n_subdims)
         in_coeff, _ = dual_vectors(K, self.n_subdims)
-
+        
         gramians = []
         for i in range(self.n_data):
             # ref_X, (n_dims, n_samples_ref_X)
@@ -42,10 +42,9 @@ class KernelMSM(MSMInterface, KernelSMBase):
             ref_X, ref_coeff = self.dic[i]
 
             # _K, (n_samples_ref_X, n_samples)
-            _K = rbf_kernel(ref_X, X)
+            _K = rbf_kernel(ref_X, X, self.sigma)
             # S, (n_subdims, n_subdims)
             S = ref_coeff.T.dot(_K.dot(in_coeff))
-
             gramians.append(S)
         return np.array(gramians)
 
@@ -91,7 +90,7 @@ class KernelMSM(MSMInterface, KernelSMBase):
         in_Xs = np.hstack(X)
         in_coeffs = block_diag(*in_coeffs)
         
-        K = rbf_kernel(in_Xs, ref_Xs)
+        K = rbf_kernel(in_Xs, ref_Xs, self.sigma)
         del ref_Xs, in_Xs
         
         S = in_coeffs.T.dot(K).dot(ref_coeffs)
@@ -107,5 +106,5 @@ class KernelMSM(MSMInterface, KernelSMBase):
         
         del S, X
         return np.array(pred)
-
+   
     

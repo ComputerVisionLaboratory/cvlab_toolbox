@@ -217,7 +217,7 @@ def subspace_bases(X, n_subdims=None, higher=True):
     return V
 
 
-def dual_vectors(K, n_subdims=None, higher=True, eps=1e-20):
+def dual_vectors(K, n_subdims=None, higher=True, eps=1e-6):
     """
     Calc dual representation of vectors in kernel space
 

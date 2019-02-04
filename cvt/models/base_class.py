@@ -135,6 +135,11 @@ class SMBase(BaseEstimator, ClassifierMixin):
             proba = self.fast_predict_proba(X)
         else:
             proba = self.predict_proba(X)
+
+        salt = 1e-3
+        assert proba.min() > 0.0 - salt, 'some probabilities are smaller than 0! min value is {}'.format(proba.min())
+        assert proba.max() < 1.0 + salt, 'some probabilities are bigger than 1! max value is {}'.format(proba.max())
+        proba = np.clip(proba, 0, 1)
         return self.proba2class(proba)
 
     def proba2class(self, proba):
