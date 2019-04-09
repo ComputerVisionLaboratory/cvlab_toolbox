@@ -31,6 +31,24 @@ def mean_square_singular_values(X):
     return mssv
 
 
+def max_square_singular_values(X):
+    """
+    calculate mean square of singular values of X
+
+    Parameters:
+    -----------
+    X : array-like, shape: (n, m)
+
+    Returns:
+    --------
+    c: mean square of singular values
+    """
+
+    _, s, _ = np.linalg.svd(X)
+    mssv = (s ** 2).max()
+    return mssv
+
+
 def canonical_angle(X, Y):
     """
     Calculate cannonical angles beween subspaces
@@ -204,14 +222,14 @@ def subspace_bases(X, n_subdims=None, higher=True):
     V: array-like, shape (n_dimensions, n_subdims)
         bases matrix
     """
-    eigvals = _get_eigvals(X.shape[0], n_subdims, higher)
 
     if X.shape[0] <= X.shape[1]:
+        eigvals = _get_eigvals(X.shape[0], n_subdims, higher)
         # get eigenvectors of autocorrelation matrix X @ X.T
         _, V = _eigen_basis(np.dot(X, X.T), eigvals=eigvals)
     else:
         # use linear kernel to get eigenvectors
-        A, _ = dual_vectors(np.dot(X.T, X), eigvals=eigvals)
+        A, _ = dual_vectors(np.dot(X.T, X), n_subdims=n_subdims, higher=higher)
         V = np.dot(X, A)
 
     return V
