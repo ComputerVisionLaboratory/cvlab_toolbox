@@ -28,7 +28,7 @@ class MutualSubspaceMethod(MSMInterface, SMBase):
         """
 
         # bases, (n_dims, n_subdims)
-        bases = subspace_bases(X, self.n_subdims)
+        bases = subspace_bases(X, self.test_n_subdims)
 
         # grammians, (n_classes, n_subdims, n_subdims or greater)
         dic = self.dic[:, :, :self.n_subdims]

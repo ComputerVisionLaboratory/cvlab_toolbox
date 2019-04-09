@@ -38,6 +38,7 @@ class SMBase(BaseEstimator, ClassifierMixin):
         self.dic = None
         self.labels = None
         self.n_classes = None
+        self._test_n_subdims = None
         self.params = ()
 
     def get_params(self, deep=True):
@@ -423,3 +424,18 @@ class MSMInterface(object):
             gramian matricies of references of each class
         """
         raise NotImplementedError('_get_gramians is not implemented')
+        
+    @property
+    def test_n_subdims(self):
+        if self._test_n_subdims is None:
+            return self.n_subdims
+        return self._test_n_subdims
+    
+    @test_n_subdims.setter
+    def test_n_subdims(self, v):
+        assert isinstance(v, int)
+        self._test_n_subdims = v
+        
+    @test_n_subdims.deleter
+    def test_n_subdims(self):
+        self._test_n_subdims = None
