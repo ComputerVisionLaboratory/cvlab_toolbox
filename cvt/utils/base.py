@@ -206,7 +206,7 @@ def _get_eigvals(n, n_subdims, higher):
     return low, high
 
 
-def subspace_bases(X, n_subdims=None, higher=True):
+def subspace_bases(X, n_subdims=None, higher=True, return_eigvals=False):
     """
     Return subspace basis using PCA
 
@@ -216,23 +216,32 @@ def subspace_bases(X, n_subdims=None, higher=True):
         data matrix
     n_subdims: integer
         number of subspace dimension
-
+    higher: bool
+        if True, this function returns eigenvectors collesponding
+        top-`n_subdims` eigenvalues. default is True.
+    return_eigvals: bool
+        if True, this function also returns eigenvalues.
     Returns
     -------
     V: array-like, shape (n_dimensions, n_subdims)
         bases matrix
+    w: array-like shape (n_subdims)
+        eigenvalues
     """
 
     if X.shape[0] <= X.shape[1]:
         eigvals = _get_eigvals(X.shape[0], n_subdims, higher)
         # get eigenvectors of autocorrelation matrix X @ X.T
-        _, V = _eigen_basis(np.dot(X, X.T), eigvals=eigvals)
+        w, V = _eigen_basis(X @ X.T, eigvals=eigvals)
     else:
         # use linear kernel to get eigenvectors
-        A, _ = dual_vectors(np.dot(X.T, X), n_subdims=n_subdims, higher=higher)
-        V = np.dot(X, A)
+        A, w = dual_vectors(X.T @ X, n_subdims=n_subdims, higher=higher)
+        V = X @ A
 
-    return V
+    if return_eigvals:
+        return V, w
+    else:
+        return V
 
 
 def dual_vectors(K, n_subdims=None, higher=True, eps=1e-6):
