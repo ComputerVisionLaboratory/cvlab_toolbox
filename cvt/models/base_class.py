@@ -4,7 +4,6 @@ Subspace Method Interface
 
 # Authors: Junki Ishikawa
 import itertools
-import pandas as pd
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.preprocessing import normalize as _normalize, LabelEncoder
