@@ -319,7 +319,7 @@ class KernelCSMBase(SMBase):
 
         # mapings, (n_classes * n_samples)
         mappings = np.array([
-            self.labels[i] for i, _X in enumerate(X)
+            i for i, _X in enumerate(X)
             for _ in range(_X.shape[1])
         ])
 
@@ -331,7 +331,7 @@ class KernelCSMBase(SMBase):
 
         coeff = []
         for i, _ in enumerate(X):
-            p = (mappings == y[i])
+            p = (mappings == i)
             # clipping K(X[y==c], X[y==c])
             # _K, (n_samples_i, n_samples_i)
             _K = K[p][:, p]
@@ -364,7 +364,7 @@ class KernelCSMBase(SMBase):
         # X_gds, (n_gds_dims, n_classes * n_samples)
         X_gds = np.dot(gds_coeff.T, K)
         # X_gds, (n_classes, n_gds_dims, n_samples)
-        X_gds = [X_gds[:, mappings == y[i]] for i, _ in enumerate(X)]
+        X_gds = [X_gds[:, mappings == i] for i, _ in enumerate(X)]
 
         # dic, (n_classes, n_dims, n_subdims)
         dic = [subspace_bases(_X, self.n_subdims) for _X in X_gds]
