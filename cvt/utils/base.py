@@ -181,7 +181,7 @@ def _eigen_basis(X, eigvals=None):
 def _get_eigvals(n, n_subdims, higher):
     """
     Culculate eigvals for eigh
-    
+
     Parameters
     ----------
     n: int
